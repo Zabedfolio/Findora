@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { ArrowUpRight } from "lucide-react";
 
 export default function NavAuthButtons({ isMobile = false, onActionClick }) {
   const { t } = useTranslation();
@@ -39,9 +40,12 @@ export default function NavAuthButtons({ isMobile = false, onActionClick }) {
         <Link
           href="/register"
           onClick={onActionClick}
-          className="btn-primary-glow w-full text-center py-2.5 text-sm font-bold text-slate-950 rounded-xl"
+          className="inline-flex items-center justify-center gap-2.5 w-full py-2.5 bg-[#9ae600] hover:bg-[#88cc00] active:scale-95 text-slate-950 font-bold rounded-full text-sm tracking-tight transition-all duration-200 shadow-[0_0_20px_rgba(154,230,0,0.45)] group"
         >
-          {t("nav.register")}
+          <span>{t("nav.register")}</span>
+          <span className="w-6 h-6 rounded-full bg-slate-950 text-[#9ae600] flex items-center justify-center transition-transform duration-200 group-hover:rotate-45 shrink-0">
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </span>
         </Link>
       </div>
     );
@@ -73,12 +77,15 @@ export default function NavAuthButtons({ isMobile = false, onActionClick }) {
         {t("nav.login")}
       </Link>
 
-      {/* Primary Action Glow Button */}
+      {/* Primary Action Button (Glowing pill with circular arrow badge) */}
       <Link
         href="/register"
-        className="btn-primary-glow px-4 sm:px-5 py-2 rounded-xl text-sm font-bold text-slate-950 tracking-tight whitespace-nowrap inline-flex items-center justify-center cursor-pointer"
+        className="inline-flex items-center gap-2.5 bg-[#9ae600] hover:bg-[#88cc00] active:scale-95 text-slate-950 font-bold pl-4 sm:pl-5 pr-2 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm tracking-tight transition-all duration-200 shadow-[0_0_20px_rgba(154,230,0,0.45)] hover:shadow-[0_0_30px_rgba(154,230,0,0.7)] group shrink-0"
       >
-        {t("nav.register")}
+        <span>{t("nav.register")}</span>
+        <span className="w-6 h-6 rounded-full bg-slate-950 text-[#9ae600] flex items-center justify-center transition-transform duration-200 group-hover:rotate-45 shrink-0">
+          <ArrowUpRight className="w-3.5 h-3.5" />
+        </span>
       </Link>
     </div>
   );

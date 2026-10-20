@@ -106,14 +106,14 @@ export default function Footer() {
         <div className="py-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8 items-start">
           {/* Column 1: Brand Info & Company Deck Pill (lg:col-span-4) */}
           <div className="lg:col-span-4 flex flex-col items-start pr-0 lg:pr-6">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3.5 mb-1">
               <img
-                src="/findora-icon.png"
-                alt="Findora"
-                className="w-8 h-8 sm:w-9 sm:h-9 object-contain rounded-xl shadow-[0_2px_12px_rgba(154,230,0,0.35)] shrink-0"
+                src="/findora-logo-clean.png"
+                alt="Findora Logo"
+                className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-[0_4px_22px_rgba(154,230,0,0.45)] shrink-0 transition-transform duration-300 hover:scale-105"
               />
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
                   findora
                 </span>
                 <span className="text-sm sm:text-base font-bold text-slate-400">

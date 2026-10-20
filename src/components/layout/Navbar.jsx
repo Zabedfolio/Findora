@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import NavAuthButtons from "./NavAuthButtons";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ArrowUpRight } from "lucide-react";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -43,17 +43,19 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Left: Brand Logo + Nav Links (Lendora style) */}
           <div className="flex items-center gap-8 lg:gap-10">
-            {/* Logo with vibrant green background and black logo inside */}
+            {/* Logo with sleek black background container */}
             <Link
               href="/"
               className="flex items-center gap-2.5 shrink-0 group focus:outline-hidden"
               aria-label="Findora Home"
             >
-              <img
-                src="/findora-icon.png"
-                alt="Findora"
-                className="h-8 w-8 sm:h-9 sm:w-9 object-contain rounded-xl shadow-[0_2px_10px_rgba(154,230,0,0.35)] transition-transform group-hover:scale-105 shrink-0"
-              />
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-950 border border-slate-850 shadow-[0_2px_10px_rgba(0,0,0,0.25)] flex items-center justify-center p-1.5 transition-transform group-hover:scale-105 shrink-0">
+                <img
+                  src="/findora-logo-clean.png"
+                  alt="Findora"
+                  className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(154,230,0,0.5)]"
+                />
+              </div>
               <span className="font-bold text-xl tracking-tight text-slate-900">
                 Findora
               </span>
@@ -85,9 +87,12 @@ export default function Navbar() {
           <div className="flex md:hidden items-center gap-3">
             <Link
               href="/register"
-              className="btn-primary-glow px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-950"
+              className="inline-flex items-center gap-1.5 bg-[#9ae600] hover:bg-[#88cc00] active:scale-95 text-slate-950 font-bold pl-3 pr-1.5 py-1.5 rounded-full text-xs tracking-tight transition-all duration-200 shadow-[0_0_15px_rgba(154,230,0,0.4)] group"
             >
-              {t("nav.register")}
+              <span>{t("nav.register")}</span>
+              <span className="w-5 h-5 rounded-full bg-slate-950 text-[#9ae600] flex items-center justify-center transition-transform duration-200 group-hover:rotate-45 shrink-0">
+                <ArrowUpRight className="w-3 h-3" />
+              </span>
             </Link>
 
             <button
