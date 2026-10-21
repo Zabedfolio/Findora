@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Home, RefreshCw, TriangleAlert } from "lucide-react";
 
 export default function Error({ error, reset }) {
