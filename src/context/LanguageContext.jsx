@@ -64,3 +64,5 @@ export function LanguageProvider({ children }) {
 export function useTranslation() {
   return useContext(LanguageContext);
 }
+
+export const useLanguage = useTranslation;
