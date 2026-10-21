@@ -20,8 +20,8 @@ export default function StatusBadge({ status = "lost", className = "" }) {
     },
     found: {
       label: t("status.found", "Found"),
-      bg: "bg-[#9ae600]/20 border-[#9ae600]/60 text-slate-900 dark:bg-[#9ae600]/25 dark:border-[#9ae600]/70 dark:text-white",
-      dot: "bg-[#7bb800]",
+      bg: "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-900/60 dark:text-emerald-300",
+      dot: "bg-emerald-500",
     },
     resolved: {
       label: t("status.resolved", "Resolved"),

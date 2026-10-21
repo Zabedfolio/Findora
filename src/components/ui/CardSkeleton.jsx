@@ -1,82 +1,44 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { PackageOpen, ArrowRight } from "lucide-react";
 
 /**
- * Friendly EmptyState component for lists and search results with no data
- *
+ * CardSkeleton component for loading states in report grids
  * @param {Object} props
- * @param {React.ElementType} [props.icon] - Lucide icon component
- * @param {string} [props.title] - Header message
- * @param {string} [props.description] - Subtitle explanation
- * @param {string} [props.actionLabel] - Primary action button text
- * @param {string} [props.actionHref] - Primary action link URL
- * @param {() => void} [props.onAction] - Primary action click handler
- * @param {string} [props.secondaryActionLabel] - Secondary action button text
- * @param {string} [props.secondaryActionHref] - Secondary action link URL
- * @param {string} [props.className] - Extra wrapper classes
+ * @param {number} [props.count=8] - Number of skeleton cards to render
  */
-export default function EmptyState({
-  icon: Icon = PackageOpen,
-  title = "No results found",
-  description = "We couldn't find any reports matching your criteria. Try adjusting your search or filters.",
-  actionLabel,
-  actionHref,
-  onAction,
-  secondaryActionLabel,
-  secondaryActionHref,
-  className = "",
-}) {
+export default function CardSkeleton({ count = 8 }) {
+  const items = Array.from({ length: count }, (_, i) => i);
+
   return (
-    <div
-      className={`flex flex-col items-center justify-center text-center p-8 sm:p-12 bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-xs ${className}`}
-    >
-      {/* Icon with glowing ring */}
-      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-5 shadow-inner">
-        <Icon className="w-8 h-8 sm:w-10 sm:h-10 stroke-[1.5]" />
-      </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {items.map((i) => (
+        <div
+          key={i}
+          className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs overflow-hidden animate-pulse flex flex-col justify-between"
+        >
+          <div>
+            {/* Image Placeholder */}
+            <div className="w-full aspect-[4/3] rounded-xl bg-slate-200 dark:bg-slate-800 mb-4" />
 
-      {/* Headings */}
-      <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2 font-heading tracking-tight">
-        {title}
-      </h3>
-      <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 max-w-md mb-6 leading-relaxed">
-        {description}
-      </p>
+            {/* Badges Line */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-16 h-5 rounded-full bg-slate-200 dark:bg-slate-800" />
+              <div className="w-20 h-4 rounded bg-slate-200 dark:bg-slate-800" />
+            </div>
 
-      {/* Actions */}
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        {actionLabel && (
-          actionHref ? (
-            <Link
-              href={actionHref}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white dark:bg-[#9ae600] dark:hover:bg-[#88cc00] dark:text-slate-950 transition-all duration-200 shadow-sm hover:shadow"
-            >
-              <span>{actionLabel}</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={onAction}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white dark:bg-[#9ae600] dark:hover:bg-[#88cc00] dark:text-slate-950 transition-all duration-200 shadow-sm hover:shadow cursor-pointer"
-            >
-              <span>{actionLabel}</span>
-            </button>
-          )
-        )}
+            {/* Title Line */}
+            <div className="w-3/4 h-5 rounded bg-slate-200 dark:bg-slate-800 mb-2" />
+            <div className="w-1/2 h-4 rounded bg-slate-200 dark:bg-slate-800 mb-4" />
+          </div>
 
-        {secondaryActionLabel && secondaryActionHref && (
-          <Link
-            href={secondaryActionHref}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-xs"
-          >
-            <span>{secondaryActionLabel}</span>
-          </Link>
-        )}
-      </div>
+          {/* Location Line */}
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+            <div className="w-32 h-4 rounded bg-slate-200 dark:bg-slate-800" />
+            <div className="w-12 h-4 rounded bg-slate-200 dark:bg-slate-800" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
