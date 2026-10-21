@@ -42,10 +42,12 @@ export default function ReportCard({ report, className = "" }) {
 
   if (!report) return null;
 
-  // Support images[] (spec) and legacy imageUrl (current demo data)
-  const image = report.images?.[0] ?? report.imageUrl;
+  // Support images[] (spec: strings or { url } objects) and legacy imageUrl
+  const rawImage = Array.isArray(report.images) && report.images.length > 0 ? report.images[0] : null;
+  const image = (typeof rawImage === "object" && rawImage !== null ? rawImage.url : rawImage) ?? report.imageUrl;
   const isResolved = report.status === "resolved";
-  const href = `/reports/${report.id}`;
+  const reportId = report.id || report._id;
+  const href = `/reports/${reportId}`;
   const dateLabel = formatReportDate(report);
 
   return (

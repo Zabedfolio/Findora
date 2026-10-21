@@ -22,23 +22,21 @@ export default function ConfirmModal({
   onConfirm,
   title,
   message,
+  description,
   confirmText,
+  confirmLabel: confirmLabelProp,
   cancelText,
+  cancelLabel: cancelLabelProp,
   variant = "danger",
   isLoading = false,
 }) {
   const { t } = useLanguage();
 
-  // t() returns the key itself when a translation is missing
-  const tr = (key, fallback) => {
-    const value = t(key);
-    return value && value !== key ? value : fallback;
-  };
-
-  const heading = title ?? tr("confirmModal.title", "Are you sure?");
-  const body = message ?? tr("confirmModal.message", "This action cannot be undone.");
-  const confirmLabel = confirmText ?? tr("confirmModal.confirm", "Confirm");
-  const cancelLabel = cancelText ?? tr("confirmModal.cancel", "Cancel");
+  // t() returns fallback when a translation is missing
+  const heading = title ?? t("confirmModal.title", "Are you sure?");
+  const body = description ?? message ?? t("confirmModal.message", "This action cannot be undone.");
+  const confirmLabel = confirmLabelProp ?? confirmText ?? t("confirmModal.confirm", "Confirm");
+  const cancelLabel = cancelLabelProp ?? cancelText ?? t("confirmModal.cancel", "Cancel");
 
   const handleOpenChange = (open) => {
     if (!open && !isLoading) onClose?.();
@@ -68,6 +66,7 @@ export default function ConfirmModal({
             <Button
               variant={variant === "danger" ? "danger" : "primary"}
               onPress={onConfirm}
+              isDisabled={isLoading}
               isPending={isLoading}
             >
               {isLoading && <Spinner size="sm" color="current" />}

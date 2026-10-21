@@ -26,7 +26,10 @@
   "reports": {
     "deleteTitle": "Delete report?",
     "deleteMessage": "This report will be permanently removed.",
-    "delete": "Delete"
+    "delete": "Delete",
+    "viewDetails": "View details of",
+    "noPhoto": "No photo provided",
+    "general": "General"
   },  
   "home": {
     "hero": {
