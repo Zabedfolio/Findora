@@ -1,7 +1,8 @@
 import Hero from "@/components/home/Hero";
 import StatsStrip from "@/components/home/StatsStrip";
 import HowItWorks from "@/components/home/HowItWorks";
-import LatestReports from "@/components/home/LatestReports";
+import RecentLostSection from "@/components/home/RecentLostSection";
+import RecentFoundSection from "@/components/home/RecentFoundSection";
 import CallToAction from "@/components/home/CallToAction";
 
 export const metadata = {
@@ -22,10 +23,13 @@ export default function HomePage() {
       {/* 3. How It Works */}
       <HowItWorks />
 
-      {/* 4. Latest Reports */}
-      <LatestReports />
+      {/* 4. Separated Lost Items Section */}
+      <RecentLostSection />
 
-      {/* 5. Call To Action Banner */}
+      {/* 5. Separated Found Items Section */}
+      <RecentFoundSection />
+
+      {/* 6. Call To Action Banner */}
       <CallToAction />
     </main>
   );

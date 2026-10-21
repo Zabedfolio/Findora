@@ -52,12 +52,19 @@
       "step5Title": "Return",
       "step5Desc": "Coordinate a safe handover spot and mark the item reunited."
     },
-    "latest": {
-      "badge": "Community Activity",
-      "title": "Latest Lost & Found Items",
-      "subtitle": "Recently reported items across your local area. Spot something that belongs to you?",
-      "viewAll": "View All Reports",
-      "noItems": "No recent reports available at the moment."
+    "lostSection": {
+      "badge": "Active Community Searches",
+      "title": "Recently Lost Items",
+      "subtitle": "Items reported missing by community members. Have you spotted any of these?",
+      "viewAll": "View All Lost Items",
+      "action": "I Saw This"
+    },
+    "foundSection": {
+      "badge": "Safe Custody & Storage",
+      "title": "Recently Found Items",
+      "subtitle": "Turned in by honest finders and waiting for verified owners to claim them safely.",
+      "viewAll": "View All Found Items",
+      "action": "Claim Item"
     },
     "cta": {
       "badge": "Join the Network",
