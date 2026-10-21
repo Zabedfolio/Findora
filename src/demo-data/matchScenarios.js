@@ -1,0 +1,77 @@
+/**
+ * Demo Data: Interactive AI Match Engine Scenarios
+ */
+export const matchScenarios = [
+  {
+    id: "macbook",
+    tabLabel: "Apple MacBook Pro",
+    category: "Laptops & Computing",
+    score: "99.2%",
+    matchSpeed: "1.4s",
+    lost: {
+      title: "MacBook Pro 14\" (Space Gray)",
+      details: "M2 Pro • Distinct Next.js sticker on bottom right",
+      location: "Dhanmondi 27 Cafe, Dhaka",
+      time: "Today at 09:15 AM",
+      reporter: "Zabed M. (Owner)",
+      image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80",
+    },
+    found: {
+      title: "Apple Laptop in Dark Gray Sleeve",
+      details: "Left at table 4, turned in to cafe front counter",
+      location: "Gloria Jean's Coffee, Dhanmondi",
+      time: "Today at 09:24 AM",
+      reporter: "Barista Counter (Finder)",
+      image: "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=800&q=80",
+    },
+    criteria: ["Serial hash match", "Location < 40m", "Photo embeddings 99.2%"],
+  },
+  {
+    id: "wallet",
+    tabLabel: "Leather Wallet",
+    category: "Personal Accessories",
+    score: "98.4%",
+    matchSpeed: "2.1s",
+    lost: {
+      title: "Bellroy Leather Bifold (Caramel Brown)",
+      details: "Contains University ID and Metro Pass",
+      location: "City Metro Station Exit 2",
+      time: "Yesterday, 06:40 PM",
+      reporter: "Samiul K. (Owner)",
+      image: "https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=800&q=80",
+    },
+    found: {
+      title: "Tan Brown Wallet with Multiple Cards",
+      details: "Secured at Metro Security Information Booth",
+      location: "City Center Metro Concourse",
+      time: "Yesterday, 07:05 PM",
+      reporter: "Station Security (Finder)",
+      image: "https://images.unsplash.com/photo-1554412933-514a83d2f3c8?auto=format&fit=crop&w=800&q=80",
+    },
+    criteria: ["ID name initials match", "Same transit gate", "Color & brand match"],
+  },
+  {
+    id: "keys",
+    tabLabel: "BMW Smart Key",
+    category: "Keys & Security",
+    score: "97.9%",
+    matchSpeed: "0.9s",
+    lost: {
+      title: "BMW Smart Key with Blue Leather Strap",
+      details: "Includes circular gym locker tag #304",
+      location: "Banani Club Parking Area",
+      time: "2 days ago, 04:30 PM",
+      reporter: "Nafis R. (Owner)",
+      image: "https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80",
+    },
+    found: {
+      title: "Smart Car Key with Leather Lanyard",
+      details: "Found on floor near parking pillar B-12",
+      location: "Banani Security Desk",
+      time: "2 days ago, 05:10 PM",
+      reporter: "Security Patrol (Finder)",
+      image: "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=800&q=80",
+    },
+    criteria: ["Key fob model match", "Parking lot proximity", "Gym tag identified"],
+  },
+];
