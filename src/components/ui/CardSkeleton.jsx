@@ -6,12 +6,13 @@ import React from "react";
  * CardSkeleton component for loading states in report grids
  * @param {Object} props
  * @param {number} [props.count=8] - Number of skeleton cards to render
+ * @param {string} [props.className] - Optional custom grid container classes
  */
-export default function CardSkeleton({ count = 8 }) {
+export default function CardSkeleton({ count = 8, className = "" }) {
   const items = Array.from({ length: count }, (_, i) => i);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 ${className}`}>
       {items.map((i) => (
         <div
           key={i}

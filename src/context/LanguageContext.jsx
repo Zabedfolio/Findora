@@ -9,7 +9,7 @@ const translations = { en, bn };
 export const LanguageContext = createContext({
   lang: "en",
   setLang: () => {},
-  t: (key) => key,
+  t: (key, fallback) => (fallback !== undefined ? fallback : key),
 });
 
 export function LanguageProvider({ children }) {
@@ -38,7 +38,7 @@ export function LanguageProvider({ children }) {
   }, []);
 
   const t = useCallback(
-    (key) => {
+    (key, fallback) => {
       const dict = translations[lang] || translations.en;
       const parts = key.split(".");
       let current = dict;
@@ -46,10 +46,14 @@ export function LanguageProvider({ children }) {
         if (current && typeof current === "object" && part in current) {
           current = current[part];
         } else {
-          return key;
+          return fallback !== undefined ? fallback : key;
         }
       }
-      return typeof current === "string" ? current : key;
+      return typeof current === "string"
+        ? current
+        : fallback !== undefined
+        ? fallback
+        : key;
     },
     [lang]
   );
