@@ -4,7 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
+import useAuth from "@/hooks/useAuth";
+import UserMenu from "./UserMenu";
 import NavAuthButtons from "./NavAuthButtons";
+import { Skeleton } from "@heroui/react";
 import { Menu, X, ArrowUpRight } from "lucide-react";
 
 export default function Navbar() {
@@ -12,6 +15,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const { t } = useTranslation();
+  const { user, loading, isAdmin, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -56,7 +60,7 @@ export default function Navbar() {
                   className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(154,230,0,0.5)]"
                 />
               </div>
-              <span className="font-bold text-xl tracking-tight text-slate-900">
+              <span className="font-semibold text-2xl tracking-tight text-slate-950 font-heading">
                 Findora
               </span>
             </Link>
@@ -81,19 +85,25 @@ export default function Navbar() {
           </div>
 
           {/* Right Action Elements (Desktop) */}
-          <NavAuthButtons />
+          <NavAuthButtons user={user} loading={loading} isAdmin={isAdmin} logout={logout} />
 
-          {/* Mobile Menu Button */}
-          <div className="flex md:hidden items-center gap-3">
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-1.5 bg-[#9ae600] hover:bg-[#88cc00] active:scale-95 text-slate-950 font-bold pl-3 pr-1.5 py-1.5 rounded-full text-xs tracking-tight transition-all duration-200 shadow-[0_0_15px_rgba(154,230,0,0.4)] group"
-            >
-              <span>{t("nav.register")}</span>
-              <span className="w-5 h-5 rounded-full bg-slate-950 text-[#9ae600] flex items-center justify-center transition-transform duration-200 group-hover:rotate-45 shrink-0">
-                <ArrowUpRight className="w-3 h-3" />
-              </span>
-            </Link>
+          {/* Mobile Right Action Area */}
+          <div className="flex md:hidden items-center gap-2.5">
+            {loading ? (
+              <Skeleton className="w-8 h-8 rounded-full bg-slate-200 animate-pulse" />
+            ) : user ? (
+              <UserMenu user={user} isAdmin={isAdmin} logout={logout} />
+            ) : (
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-1.5 bg-[#9ae600] hover:bg-[#88cc00] active:scale-95 text-slate-950 font-bold pl-3 pr-1.5 py-1.5 rounded-full text-xs tracking-tight transition-all duration-200 shadow-[0_0_15px_rgba(154,230,0,0.4)] group"
+              >
+                <span>{t("nav.register")}</span>
+                <span className="w-5 h-5 rounded-full bg-slate-950 text-[#9ae600] flex items-center justify-center transition-transform duration-200 group-hover:rotate-45 shrink-0">
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </span>
+              </Link>
+            )}
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -127,7 +137,14 @@ export default function Navbar() {
             })}
           </nav>
 
-          <NavAuthButtons isMobile onActionClick={() => setMobileMenuOpen(false)} />
+          <NavAuthButtons
+            isMobile
+            user={user}
+            loading={loading}
+            isAdmin={isAdmin}
+            logout={logout}
+            onActionClick={() => setMobileMenuOpen(false)}
+          />
         </div>
       )}
     </header>
