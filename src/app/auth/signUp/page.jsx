@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Mail, Image as ImageIcon, Lock, ArrowRight } from "lucide-react";
-// import { authClient } from "@/lib/auth-client"; 
+import { authClient } from "@/lib/auth-client";
 
 export default function SignUpPage() {
   const router = useRouter();
