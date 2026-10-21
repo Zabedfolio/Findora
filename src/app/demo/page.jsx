@@ -4,7 +4,7 @@ import React from 'react';
 const demoPage = () => {
     return (
         <div>
-            <ClaimForm></ClaimForm>
+            // new task visible
         </div>
     );
 };
