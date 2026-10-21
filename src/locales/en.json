@@ -1,7 +1,7 @@
 {
   "nav": {
     "brand": "Findora",
-    "browse": "Explore Items",
+    "browse": "Explore Reports",
     "categories": "Categories",
     "howItWorks": "How It Works",
     "trust": "Trust & Safety",
@@ -11,6 +11,67 @@
     "register": "Register",
     "menu": "Menu",
     "close": "Close"
+  },
+  "status": {
+    "lost": "Lost",
+    "found": "Found",
+    "resolved": "Resolved"
+  },
+  "home": {
+    "hero": {
+      "badge": "Intelligent Lost & Found Network",
+      "title": "Reuniting Lost Belongings with Speed, Trust & Security",
+      "subtitle": "Findora connects individuals who have lost belongings with honest finders through automated matching, verified ownership claims, and secure local handovers.",
+      "lostBtn": "I Lost Something",
+      "foundBtn": "I Found Something",
+      "searchPlaceholder": "Search by item name, model, color, or location...",
+      "searchBtn": "Search Items"
+    },
+    "stats": {
+      "reunited": "Items Reunited",
+      "reunitedCount": "1,250+",
+      "successRate": "Recovery Rate",
+      "successRateCount": "94%",
+      "community": "Active Members",
+      "communityCount": "15,000+",
+      "responseTime": "Avg. Response",
+      "responseTimeCount": "< 24h"
+    },
+    "howItWorks": {
+      "badge": "Simple & Transparent Process",
+      "title": "How Findora Works",
+      "subtitle": "Five simple steps to reunite lost belongings with their rightful owners safely.",
+      "step1Title": "Report",
+      "step1Desc": "Submit details, photos, and location of the lost or found item.",
+      "step2Title": "Find Matches",
+      "step2Desc": "Smart similarity matching connects matching listings in real-time.",
+      "step3Title": "Submit Claim",
+      "step3Desc": "Verify ownership by answering unique questions or sharing proof.",
+      "step4Title": "Verify",
+      "step4Desc": "Finder confirms the claim through safe, private verification.",
+      "step5Title": "Return",
+      "step5Desc": "Coordinate a safe handover spot and mark the item reunited."
+    },
+    "lostSection": {
+      "badge": "Active Community Searches",
+      "title": "Recently Lost Items",
+      "subtitle": "Items reported missing by community members. Have you spotted any of these?",
+      "viewAll": "View All Lost Items",
+      "action": "I Saw This"
+    },
+    "foundSection": {
+      "badge": "Safe Custody & Storage",
+      "title": "Recently Found Items",
+      "subtitle": "Turned in by honest finders and waiting for verified owners to claim them safely.",
+      "viewAll": "View All Found Items",
+      "action": "Claim Item"
+    },
+    "cta": {
+      "badge": "Join the Network",
+      "title": "Be Part of a Community That Helps Each Other",
+      "subtitle": "Create an account in seconds to report items, receive match notifications, and help neighbours recover what they treasure.",
+      "button": "Create Free Account"
+    }
   },
   "footer": {
     "sayHi": "Let's collaborate! Say hi",
