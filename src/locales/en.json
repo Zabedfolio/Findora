@@ -17,6 +17,17 @@
     "found": "Found",
     "resolved": "Resolved"
   },
+  "confirmModal": {
+    "title": "Are you sure?",
+    "message": "This action cannot be undone.",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "reports": {
+    "deleteTitle": "Delete report?",
+    "deleteMessage": "This report will be permanently removed.",
+    "delete": "Delete"
+  },  
   "home": {
     "hero": {
       "badge": "Intelligent Lost & Found Network",
