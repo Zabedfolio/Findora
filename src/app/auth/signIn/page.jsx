@@ -1,14 +1,13 @@
+
 "use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Mail, Lock, ArrowRight } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
 export default function SignInPage() {
-    const router = useRouter();
-
     const [formData, setFormData] = useState({
         email: "",
         password: "",
@@ -17,7 +16,7 @@ export default function SignInPage() {
     const { data: session } = authClient.useSession();
     const user = session?.user;
 
-    console.log(user)
+    console.log(user);
 
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -41,11 +40,13 @@ export default function SignInPage() {
                 throw new Error(authError.message || "Invalid email or password");
             }
 
-            // Redirect to dashboard or home page after successful sign in
-            router.push("/auth/signup");
+            setLoading(false);
+            redirect("/dashboard");
         } catch (err) {
+            if (err.message === "NEXT_REDIRECT") {
+                throw err;
+            }
             setError(err.message || "Something went wrong. Please try again.");
-        } finally {
             setLoading(false);
         }
     };
@@ -152,3 +153,9 @@ export default function SignInPage() {
         </div>
     );
 }
+
+
+
+
+
+
