@@ -1,10 +1,10 @@
-import ClaimForm from '@/components/claims/ClaimForm';
+import StatsCards from '@/components/dashboard/StatsCards';
 import React from 'react';
 
 const demoPage = () => {
     return (
         <div>
-            // new task visible
+            <StatsCards></StatsCards>
         </div>
     );
 };
