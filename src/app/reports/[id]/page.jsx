@@ -12,9 +12,9 @@ import ReportActions from "@/components/reports/ReportActions";
 import ClaimButton from "@/components/reports/ClaimButton";
 import MatchSuggestions from "@/components/reports/MatchSuggestions";
 import EmptyState from "@/components/ui/EmptyState";
+import Loader from "@/components/ui/Loader";
 import {
   ArrowLeft,
-  Loader2,
   PackageSearch,
   Share2,
   AlertCircle,
@@ -24,21 +24,8 @@ import toast from "@/lib/toast";
 
 function ReportDetailsSkeleton() {
   return (
-    <div className="min-h-screen py-8 sm:py-12 bg-slate-50/50 dark:bg-slate-950">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="h-6 w-36 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse mb-8" />
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8 space-y-6">
-            <div className="aspect-16/10 rounded-3xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
-            <div className="h-10 w-3/4 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse" />
-            <div className="h-28 bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />
-          </div>
-          <div className="lg:col-span-4 space-y-6">
-            <div className="h-56 bg-slate-200 dark:bg-slate-800 rounded-3xl animate-pulse" />
-            <div className="h-32 bg-slate-200 dark:bg-slate-800 rounded-3xl animate-pulse" />
-          </div>
-        </div>
-      </div>
+    <div className="min-h-[70vh] flex items-center justify-center py-12">
+      <Loader size="xl" />
     </div>
   );
 }
@@ -70,24 +57,11 @@ function ReportDetailsContent() {
     }
   };
 
-  // 1. Loading State (Sleek Skeleton Loader)
+  // 1. Loading State (Loader)
   if (isLoading) {
     return (
-      <div className="min-h-screen py-8 sm:py-12 bg-slate-50/50 dark:bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-6 w-36 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse mb-8" />
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-8 space-y-6">
-              <div className="aspect-16/10 rounded-3xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
-              <div className="h-10 w-3/4 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse" />
-              <div className="h-28 bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />
-            </div>
-            <div className="lg:col-span-4 space-y-6">
-              <div className="h-56 bg-slate-200 dark:bg-slate-800 rounded-3xl animate-pulse" />
-              <div className="h-32 bg-slate-200 dark:bg-slate-800 rounded-3xl animate-pulse" />
-            </div>
-          </div>
-        </div>
+      <div className="min-h-[70vh] flex items-center justify-center py-12">
+        <Loader size="xl" />
       </div>
     );
   }

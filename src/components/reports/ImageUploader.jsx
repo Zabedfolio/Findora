@@ -94,7 +94,7 @@ export default function ImageUploader({ images = [], onChange, maxImages = 4 }) 
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             placeholder="https://example.com/item-photo.jpg"
-            className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-[#9ae600]"
+            className="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#9ae600] focus:border-transparent transition-all"
           />
           <button
             type="button"

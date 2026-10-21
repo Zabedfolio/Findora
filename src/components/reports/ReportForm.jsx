@@ -324,7 +324,7 @@ export default function ReportForm({
             value={itemCurrentLocation}
             onChange={(e) => setItemCurrentLocation(e.target.value)}
             placeholder="e.g. Safely with me / Turned in to Banani Metro Station counter"
-            className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-emerald-300/80 dark:border-emerald-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+            className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
           />
         </div>
       )}

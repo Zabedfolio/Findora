@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import toast from "@/lib/toast";
@@ -16,8 +17,19 @@ export function useAuth() {
   const sessionResult = authClient?.useSession ? authClient.useSession() : { data: null, isPending: false };
   const { data: sessionData, isPending, error } = sessionResult || {};
 
-  const user = sessionData?.user || null;
-  const session = sessionData?.session || null;
+  const [demoUser, setDemoUser] = useState(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("findora_demo_user");
+      if (stored) {
+        setDemoUser(JSON.parse(stored));
+      }
+    } catch {}
+  }, []);
+
+  const user = sessionData?.user || demoUser || null;
+  const session = sessionData?.session || (demoUser ? { id: "demo-session" } : null);
   const loading = isPending ?? false;
 
   // Check if current user has administrator privileges
@@ -32,6 +44,10 @@ export function useAuth() {
    */
   const logout = async () => {
     try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("findora_demo_user");
+        setDemoUser(null);
+      }
       if (authClient?.signOut) {
         await authClient.signOut();
       }
