@@ -10,7 +10,8 @@ import { getReportById, createReport } from "@/services/reportService";
 import useAuth from "@/hooks/useAuth";
 import toast from "@/lib/toast";
 import EmptyState from "@/components/ui/EmptyState";
-import { ArrowLeft, Loader2, PackageSearch, ShieldCheck } from "lucide-react";
+import Loader from "@/components/ui/Loader";
+import { ArrowLeft, PackageSearch, ShieldCheck } from "lucide-react";
 
 function EditReportContent() {
   const router = useRouter();
@@ -56,7 +57,7 @@ function EditReportContent() {
     return (
       <ProtectedRoute>
         <div className="min-h-[60vh] flex items-center justify-center p-8">
-          <Loader2 className="w-8 h-8 text-[#9ae600] animate-spin" />
+          <Loader size="lg" />
         </div>
       </ProtectedRoute>
     );
@@ -120,7 +121,7 @@ export default function EditReportPage() {
     <Suspense
       fallback={
         <div className="min-h-[60vh] flex items-center justify-center p-8">
-          <Loader2 className="w-8 h-8 text-[#9ae600] animate-spin" />
+          <Loader size="lg" />
         </div>
       }
     >
