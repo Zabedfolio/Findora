@@ -92,9 +92,7 @@ export default function SignUpForm() {
         await new Promise((resolve) => setTimeout(resolve, 950));
       }
 
-      toast.success("Account created successfully! Welcome to Findora.", {
-        icon: "🎉",
-      });
+      toast.success("Account created successfully! Welcome to Findora.");
 
       // Redirect to sign in or reports
       router.push("/auth/signIn");
@@ -108,8 +106,8 @@ export default function SignUpForm() {
   };
 
   const handleSocialLogin = (provider) => {
-    toast(`Connecting with ${provider}...`, {
-      icon: "🔐",
+    toast.loading(`Connecting with ${provider}...`, {
+      duration: 1000,
     });
     setTimeout(() => {
       toast.success(`Account registered with ${provider}!`);

@@ -67,9 +67,7 @@ export default function SignInForm() {
         await new Promise((resolve) => setTimeout(resolve, 850));
       }
 
-      toast.success("Welcome back! Signed in successfully.", {
-        icon: "👋",
-      });
+      toast.success("Welcome back! Signed in successfully.");
 
       // Redirect to reports / dashboard
       router.push("/reports");
@@ -83,8 +81,8 @@ export default function SignInForm() {
   };
 
   const handleSocialLogin = (provider) => {
-    toast(`Connecting with ${provider}...`, {
-      icon: "🔐",
+    toast.loading(`Connecting with ${provider}...`, {
+      duration: 1000,
     });
     setTimeout(() => {
       toast.success(`Successfully authenticated with ${provider}!`);
