@@ -5,7 +5,6 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Mail, Image as ImageIcon, Lock, ArrowRight } from "lucide-react";
-// Import your Better Auth client instance (adjust path according to your project structure)
 // import { authClient } from "@/lib/auth-client"; 
 
 export default function SignUpPage() {
@@ -38,20 +37,18 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      // Using Better Auth client sign-up method
       const { data, error: authError } = await authClient.signUp.email({
         email: formData.email,
         password: formData.password,
         name: formData.name,
-        image: formData.picture, // Passes profile picture URL
+        image: formData.picture,
       });
 
       if (authError) {
         throw new Error(authError.message || "Registration failed");
       }
 
-      // Redirect user to Sign In page (or dashboard) upon successful registration
-      router.push("/auth/signIn");
+      router.push("/auth/signin");
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
     } finally {
@@ -196,7 +193,7 @@ export default function SignUpPage() {
           {/* Link to Sign In Page */}
           <div className="mt-6 text-center text-sm text-neutral-400">
             Already have an account?{" "}
-            <Link href="/auth/signIn" className="text-[#CCFF00] font-semibold hover:underline">
+            <Link href="/auth/signin" className="text-[#CCFF00] font-semibold hover:underline">
               Sign In
             </Link>
           </div>
