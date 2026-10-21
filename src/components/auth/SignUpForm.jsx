@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "@/lib/toast";
+import { authClient } from "@/lib/auth-client";
 import {
   User,
   Mail,
@@ -76,15 +77,27 @@ export default function SignUpForm() {
     setLoading(true);
 
     try {
-      // Simulate account creation
-      await new Promise((resolve) => setTimeout(resolve, 950));
+      if (authClient?.signUp?.email) {
+        const { data, error: authError } = await authClient.signUp.email({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+          image: formData.picture,
+        });
+
+        if (authError) {
+          throw new Error(authError.message || "Registration failed");
+        }
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 950));
+      }
 
       toast.success("Account created successfully! Welcome to Findora.", {
         icon: "🎉",
       });
 
-      // Redirect to reports / dashboard
-      router.push("/reports");
+      // Redirect to sign in or reports
+      router.push("/auth/signIn");
     } catch (err) {
       const msg = err.message || "Registration failed. Please try again.";
       setError(msg);

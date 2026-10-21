@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "@/lib/toast";
+import { authClient } from "@/lib/auth-client";
 import {
   Mail,
   Lock,
@@ -53,8 +54,18 @@ export default function SignInForm() {
     setLoading(true);
 
     try {
-      // Simulate authentication request
-      await new Promise((resolve) => setTimeout(resolve, 850));
+      if (authClient?.signIn?.email) {
+        const { data, error: authError } = await authClient.signIn.email({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (authError) {
+          throw new Error(authError.message || "Invalid email or password");
+        }
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 850));
+      }
 
       toast.success("Welcome back! Signed in successfully.", {
         icon: "👋",
