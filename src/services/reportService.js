@@ -84,7 +84,7 @@ export async function getReports(params = {}) {
     limit = 9,
   } = params;
 
-  let allItems = getAllDemoReports();
+  let allItems = getAllUnifiedReports();
 
   // Pre-calculate counts before type filter
   const typeCounts = {
@@ -191,10 +191,194 @@ export async function getReports(params = {}) {
   };
 }
 
+// In-memory & LocalStorage storage keys for client runtime persistence
+const STORAGE_KEY_CUSTOM_REPORTS = "findora_custom_reports_v1";
+const STORAGE_KEY_DELETED_IDS = "findora_deleted_reports_v1";
+const STORAGE_KEY_STATUS_MAP = "findora_report_status_map_v1";
+
+function getStoredCustomReports() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_CUSTOM_REPORTS);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function getStoredDeletedIds() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_DELETED_IDS);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function getStoredStatusMap() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_STATUS_MAP);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function getAllUnifiedReports() {
+  const baseDemo = getAllDemoReports();
+  const custom = getStoredCustomReports();
+  const deletedIds = new Set(getStoredDeletedIds());
+  const statusMap = getStoredStatusMap();
+
+  const combined = [...custom, ...baseDemo]
+    .filter((r) => !deletedIds.has(r.id) && !deletedIds.has(r._id))
+    .map((r) => {
+      const id = r.id || r._id;
+      if (statusMap[id]) {
+        return { ...r, status: statusMap[id] };
+      }
+      return r;
+    });
+
+  return combined;
+}
+
 /**
- * Fetch a single report by ID
+ * Fetch a single report by ID (checks custom reports and demo reports)
  */
 export async function getReportById(id) {
-  const all = getAllDemoReports();
-  return all.find((r) => r.id === id) || null;
+  // If backend is configured, attempt fetch
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/reports/${id}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      // Fallback seamlessly
+    }
+  }
+
+  const all = getAllUnifiedReports();
+  return all.find((r) => String(r.id) === String(id) || String(r._id) === String(id)) || null;
 }
+
+/**
+ * Create a new lost or found report
+ */
+export async function createReport(reportData, user) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/reports`, {
+        method: "POST",
+        body: reportData instanceof FormData ? reportData : JSON.stringify(reportData),
+        headers: reportData instanceof FormData ? {} : { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn("Backend API unavailable, saving locally:", e.message);
+    }
+  }
+
+  // Parse input fields if FormData was submitted
+  let parsed = {};
+  if (typeof FormData !== "undefined" && reportData instanceof FormData) {
+    for (const [key, value] of reportData.entries()) {
+      if (key !== "images") {
+        parsed[key] = value;
+      }
+    }
+  } else {
+    parsed = { ...reportData };
+  }
+
+  const newId = `rep-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+  const now = new Date();
+
+  // Create new report object
+  const newReport = {
+    id: newId,
+    _id: newId,
+    title: parsed.title,
+    description: parsed.description,
+    type: parsed.type || "lost",
+    category: parsed.category,
+    location: parsed.location,
+    date: "Just now",
+    dateRaw: parsed.date ? new Date(parsed.date).toISOString() : now.toISOString(),
+    status: parsed.type === "found" ? "found" : "lost",
+    itemCurrentLocation: parsed.itemCurrentLocation || "",
+    imageUrl:
+      parsed.imageUrl ||
+      (parsed.type === "found"
+        ? "https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80"
+        : "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80"),
+    images: parsed.images || [],
+    owner: {
+      _id: user?.id || user?._id || "user_current",
+      name: user?.name || "Findora Member",
+      email: user?.email || "member@findora.app",
+      image: user?.image || "/default-avatar.png",
+      phone: user?.phone || "+880 1700-000000",
+    },
+    createdAt: now.toISOString(),
+  };
+
+  if (typeof window !== "undefined") {
+    const custom = getStoredCustomReports();
+    localStorage.setItem(STORAGE_KEY_CUSTOM_REPORTS, JSON.stringify([newReport, ...custom]));
+  }
+
+  return newReport;
+}
+
+/**
+ * Mark a report as resolved
+ */
+export async function resolveReport(id) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/reports/${id}/resolve`, { method: "PATCH" });
+      if (res.ok) return await res.json();
+    } catch {}
+  }
+
+  if (typeof window !== "undefined") {
+    const statusMap = getStoredStatusMap();
+    statusMap[id] = "resolved";
+    localStorage.setItem(STORAGE_KEY_STATUS_MAP, JSON.stringify(statusMap));
+  }
+
+  return { success: true, id, status: "resolved" };
+}
+
+/**
+ * Delete a report
+ */
+export async function deleteReport(id) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/reports/${id}`, { method: "DELETE" });
+      if (res.ok) return await res.json();
+    } catch {}
+  }
+
+  if (typeof window !== "undefined") {
+    const deleted = getStoredDeletedIds();
+    if (!deleted.includes(id)) {
+      deleted.push(id);
+      localStorage.setItem(STORAGE_KEY_DELETED_IDS, JSON.stringify(deleted));
+    }
+  }
+
+  return { success: true, id };
+}
+
