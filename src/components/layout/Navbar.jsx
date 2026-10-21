@@ -56,7 +56,7 @@ export default function Navbar() {
                   className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(154,230,0,0.5)]"
                 />
               </div>
-              <span className="font-bold text-xl tracking-tight text-slate-900">
+              <span className="font-semibold text-2xl tracking-tight text-slate-950 font-heading">
                 Findora
               </span>
             </Link>

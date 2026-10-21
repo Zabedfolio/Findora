@@ -11,15 +11,33 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: #9ae600;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Geist Variable", "Geist", var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Bricolage Grotesque Variable", "Bricolage Grotesque", var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Bricolage Grotesque", var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family: "Geist Variable", "Geist", var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   color-scheme: light;
+}
+
+/* Titles, Display Headings, and Brand Typography (Bricolage Grotesque Variable) */
+h1, h2, h3, h4, h5, h6, .font-heading, .font-display {
+  font-family: "Bricolage Grotesque Variable", "Bricolage Grotesque", var(--font-bricolage), ui-sans-serif, system-ui, sans-serif !important;
+  letter-spacing: -0.025em;
+}
+
+/* Ensure child elements inside headings inherit heading font */
+h1 *, h2 *, h3 *, h4 *, h5 *, h6 * {
+  font-family: inherit !important;
+}
+
+/* Normal Texts, Paragraphs & UI Controls (Geist Variable) */
+body, p, button, input, label, select, textarea, .font-sans, .font-body {
+  font-family: "Geist Variable", "Geist", var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Primary glow button effect */
