@@ -11,7 +11,6 @@ import {
   ShieldCheck,
   LogOut,
   ChevronDown,
-  Sparkles,
 } from "lucide-react";
 import useAuth from "@/hooks/useAuth";
 
@@ -150,21 +149,6 @@ export default function UserMenu({ user: propUser, isAdmin: propIsAdmin, logout:
                     {displayEmail}
                   </p>
                 )}
-
-                {/* Role Pill Badge */}
-                <div className="mt-1.5 flex items-center gap-1.5">
-                  {isAdmin ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
-                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      <span>Admin</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-[#9ae600]/15 text-[#4b7a00] dark:text-[#9ae600] px-2 py-0.5 rounded-full border border-[#9ae600]/30">
-                      <Sparkles className="w-2.5 h-2.5 text-[#7dbd00]" />
-                      <span>Active Member</span>
-                    </span>
-                  )}
-                </div>
               </div>
             </div>
           </div>
