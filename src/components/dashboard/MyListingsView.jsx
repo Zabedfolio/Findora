@@ -21,7 +21,6 @@ import {
   Package,
   Radio,
   X,
-  Sparkles,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { getAllUnifiedReports, resolveReport, deleteReport } from "@/services/reportService";

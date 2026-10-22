@@ -23,8 +23,7 @@ import {
   X,
   Check,
   CheckCheck,
-  ChevronDown,
-  Sparkles,
+  PlusCircle,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import {
@@ -348,7 +347,7 @@ export default function AdminReportsPage() {
               href="/reports/new"
               className="btn-primary-glow inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-950 shadow-xs ml-auto"
             >
-              <Sparkles size={13} />
+              <PlusCircle size={13} />
               <span>Post Official Report</span>
             </Link>
           </div>

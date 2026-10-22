@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Radio, Crosshair, Sparkles, Activity } from "lucide-react";
+import { Radio, Crosshair, Zap, Activity } from "lucide-react";
 
 /**
  * RadarScannerVisual:
@@ -131,7 +131,7 @@ export default function RadarScannerVisual({
           </span>
         </div>
         <div className="flex items-center gap-1 text-slate-500 shrink-0">
-          <Sparkles className="w-3 h-3 text-[#9ae600]" />
+          <Zap className="w-3 h-3 text-[#9ae600]" />
           <span>CONFIDENCE ALGO v2.4</span>
         </div>
       </div>

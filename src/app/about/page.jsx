@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Sparkles, ShieldCheck, HeartHandshake, MapPin, ArrowRight, ArrowLeft, Radio } from "lucide-react";
+import { ShieldCheck, HeartHandshake, MapPin, ArrowRight, ArrowLeft, Radio } from "lucide-react";
 
 export default function AboutPage() {
   return (
@@ -22,7 +22,7 @@ export default function AboutPage() {
           <div className="absolute top-0 right-0 w-80 h-80 bg-[#9ae600]/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#9ae600]/15 border border-[#9ae600]/30 text-[#9ae600] text-xs font-mono font-bold mb-4">
-            <Sparkles className="w-4 h-4" />
+            <HeartHandshake className="w-4 h-4" />
             <span>OUR MISSION</span>
           </div>
 

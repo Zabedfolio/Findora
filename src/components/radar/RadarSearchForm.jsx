@@ -6,7 +6,7 @@ import {
   MapPin,
   Tag,
   SlidersHorizontal,
-  Sparkles,
+  Zap,
   X,
   ArrowRight,
   PackageSearch,
@@ -124,7 +124,7 @@ export default function RadarSearchForm({
         {/* Quick Suggestions */}
         <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
           <span className="text-[11px] font-medium text-slate-400 mr-1 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-[#9ae600]" /> Try:
+            <Zap className="w-3 h-3 text-[#9ae600]" /> Try:
           </span>
           {QUICK_TAGS.map((tag) => (
             <button

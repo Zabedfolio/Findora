@@ -16,7 +16,6 @@ import {
   EyeOff,
   User,
   Clock,
-  Sparkles,
   ExternalLink,
   X,
   Check,

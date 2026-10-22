@@ -18,7 +18,6 @@ import {
   Lock,
   Unlock,
   Activity,
-  Sparkles,
   Smartphone,
   Globe,
   FileWarning,

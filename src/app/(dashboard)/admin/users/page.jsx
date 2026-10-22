@@ -18,7 +18,6 @@ import {
   MoreVertical,
   X,
   Check,
-  Sparkles,
   Edit,
   ArrowRightLeft,
   FileText,

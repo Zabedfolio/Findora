@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   CheckCircle,
   MessageSquare,
-  Sparkles,
 } from "lucide-react";
 import toast from "@/lib/toast";
 

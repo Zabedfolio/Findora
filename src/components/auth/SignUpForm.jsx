@@ -13,7 +13,7 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  Sparkles,
+  Zap,
   ShieldCheck,
   CheckCircle2,
   Quote,
@@ -154,7 +154,7 @@ export default function SignUpForm() {
               </Link>
 
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[#9ae600] text-xs font-semibold">
-                <Sparkles className="w-3.5 h-3.5" />
+                <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Free Community Membership</span>
               </div>
             </div>
@@ -171,7 +171,7 @@ export default function SignUpForm() {
           <div className="relative z-10 my-8 space-y-3.5">
             <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
               <div className="w-9 h-9 rounded-xl bg-[#9ae600]/20 text-[#9ae600] flex items-center justify-center shrink-0">
-                <Sparkles className="w-4 h-4" />
+                <Zap className="w-4 h-4" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-white">Smart Match Notifications</h4>

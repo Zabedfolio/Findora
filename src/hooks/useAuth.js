@@ -1,9 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import toast from "@/lib/toast";
+
+/**
+ * Synchronize authentication cookies for Next.js middleware and proxy guards
+ */
+function syncAuthCookies(u) {
+  if (typeof document === "undefined") return;
+  if (u) {
+    document.cookie = "findora_session=1; path=/; max-age=604800; SameSite=Lax";
+    document.cookie = `findora_role=${u.role || "user"}; path=/; max-age=604800; SameSite=Lax`;
+  } else {
+    document.cookie = "findora_session=; path=/; max-age=0; SameSite=Lax";
+    document.cookie = "findora_role=; path=/; max-age=0; SameSite=Lax";
+    document.cookie = "my_app_v2.session_token=; path=/; max-age=0; SameSite=Lax";
+  }
+}
 
 /**
  * Custom authentication hook integrating with Better-Auth client.
@@ -14,19 +29,50 @@ export function useAuth() {
   const router = useRouter();
 
   // Better-Auth reactive session query
-  const sessionResult = authClient?.useSession ? authClient.useSession() : { data: null, isPending: false };
+  const sessionResult = authClient?.useSession
+    ? authClient.useSession()
+    : { data: null, isPending: false };
   const { data: sessionData, isPending, error } = sessionResult || {};
 
   const [demoUser, setDemoUser] = useState(null);
+  const [authHydrated, setAuthHydrated] = useState(false);
 
-  const refreshUser = () => {
+  const refreshUser = useCallback(() => {
     try {
+      if (typeof window === "undefined") return;
+      const isLoggedOut = localStorage.getItem("findora_logged_out") === "true";
+      if (isLoggedOut) {
+        setDemoUser(null);
+        syncAuthCookies(null);
+        setAuthHydrated(true);
+        return;
+      }
+
       const stored = localStorage.getItem("findora_demo_user");
       if (stored) {
-        setDemoUser(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setDemoUser(parsed);
+        syncAuthCookies(parsed);
+      } else {
+        // Default initial session for local developer workspace
+        const defaultDevUser = {
+          id: "user_current",
+          name: "Zabed Mahmud",
+          email: "zabedfolio@gmail.com",
+          phone: "+880 1712-345678",
+          image: "/default-avatar.png",
+          role: "admin",
+        };
+        localStorage.setItem("findora_demo_user", JSON.stringify(defaultDevUser));
+        setDemoUser(defaultDevUser);
+        syncAuthCookies(defaultDevUser);
       }
-    } catch {}
-  };
+    } catch {
+      // Fallback
+    } finally {
+      setAuthHydrated(true);
+    }
+  }, []);
 
   useEffect(() => {
     refreshUser();
@@ -35,15 +81,14 @@ export function useAuth() {
       window.addEventListener("findora_user_updated", handleUpdate);
       return () => window.removeEventListener("findora_user_updated", handleUpdate);
     }
-  }, []);
+  }, [refreshUser]);
 
   const [dbRole, setDbRole] = useState(null);
   const [dbImage, setDbImage] = useState(null);
 
   // Synchronize role and avatar image directly from MongoDB database
   useEffect(() => {
-    const targetEmail =
-      sessionData?.user?.email || demoUser?.email || "zabedfolio@gmail.com";
+    const targetEmail = sessionData?.user?.email || demoUser?.email;
     if (!targetEmail) return;
 
     let isMounted = true;
@@ -51,7 +96,12 @@ export function useAuth() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (isMounted && data?.success) {
-          if (data?.role) setDbRole(data.role);
+          if (data?.role) {
+            setDbRole(data.role);
+            if (typeof document !== "undefined") {
+              document.cookie = `findora_role=${data.role}; path=/; max-age=604800; SameSite=Lax`;
+            }
+          }
           if (data?.user?.image) setDbImage(data.user.image);
         }
       })
@@ -64,24 +114,29 @@ export function useAuth() {
     };
   }, [sessionData?.user?.email, demoUser?.email]);
 
-  const rawUser = sessionData?.user || demoUser || {
-    id: "user_current",
-    name: "Zabed Mahmud",
-    email: "zabedfolio@gmail.com",
-    phone: "+880 1712-345678",
-    image: "/default-avatar.png",
-    role: "admin",
-  };
+  const isLoggedOut =
+    typeof window !== "undefined" &&
+    localStorage.getItem("findora_logged_out") === "true";
+
+  const rawUser = isLoggedOut
+    ? null
+    : sessionData?.user || demoUser || null;
 
   // User object guaranteed to have real role and ImgBB avatar from MongoDB
-  const user = {
-    ...rawUser,
-    role: dbRole || rawUser?.role || "user",
-    image: dbImage || rawUser?.image || "/default-avatar.png",
-  };
+  const user = rawUser
+    ? {
+        ...rawUser,
+        role: dbRole || rawUser?.role || "user",
+        image: dbImage || rawUser?.image || "/default-avatar.png",
+      }
+    : null;
 
-  const session = sessionData?.session || (demoUser ? { id: "demo-session" } : null);
-  const loading = isPending ?? false;
+  const session = user
+    ? sessionData?.session || { id: "demo-session" }
+    : null;
+
+  // Hydration + Better-auth session query loading state
+  const loading = isPending || !authHydrated;
 
   // Check if current user has administrator privileges
   const isAdmin = Boolean(
@@ -90,10 +145,36 @@ export function useAuth() {
   );
 
   /**
+   * Quick demo login for role testing (admin vs regular member)
+   */
+  const loginDemoUser = (targetRole = "user") => {
+    const isTargetAdmin = targetRole === "admin";
+    const newUser = {
+      id: isTargetAdmin ? "user_admin" : "user_member",
+      name: isTargetAdmin ? "Zabed Mahmud (Admin)" : "Rahim Ahmed (Member)",
+      email: isTargetAdmin ? "zabedfolio@gmail.com" : "rahim.member@findora.app",
+      phone: "+880 1712-345678",
+      image: "/default-avatar.png",
+      role: targetRole,
+    };
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("findora_logged_out");
+      localStorage.setItem("findora_demo_user", JSON.stringify(newUser));
+      syncAuthCookies(newUser);
+      setDemoUser(newUser);
+      setDbRole(targetRole);
+      window.dispatchEvent(new Event("findora_user_updated"));
+    }
+    return newUser;
+  };
+
+  /**
    * Update current user profile and sync role with MongoDB
    */
   const updateProfile = async (updates) => {
     try {
+      if (!user) return { success: false };
+
       // If role is updated, persist directly into MongoDB database
       if (updates?.role && user?.email) {
         try {
@@ -113,33 +194,15 @@ export function useAuth() {
         }
       }
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL;
-      if (apiBase) {
-        try {
-          const res = await fetch(`${apiBase}/users/me`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-            },
-            body: JSON.stringify(updates),
-          });
-          if (res.ok) {
-            const data = await res.json();
-            if (data?.user) updates = data.user;
-          }
-        } catch (e) {
-          console.warn("Backend update error, saving to client state:", e.message);
-        }
-      }
-
       const updatedUser = {
         ...(user || {}),
         ...updates,
       };
 
       if (typeof window !== "undefined") {
+        localStorage.removeItem("findora_logged_out");
         localStorage.setItem("findora_demo_user", JSON.stringify(updatedUser));
+        syncAuthCookies(updatedUser);
         window.dispatchEvent(new Event("findora_user_updated"));
       }
 
@@ -155,30 +218,6 @@ export function useAuth() {
    * Change user password
    */
   const changePassword = async ({ currentPassword, newPassword }) => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL;
-    if (apiBase) {
-      try {
-        const res = await fetch(`${apiBase}/users/me/password`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-          },
-          body: JSON.stringify({ currentPassword, newPassword }),
-        });
-        if (res.ok) {
-          return await res.json();
-        } else {
-          const err = await res.json();
-          throw new Error(err.message || "Failed to update password");
-        }
-      } catch (e) {
-        if (!e.message?.includes("fetch")) {
-          throw e;
-        }
-      }
-    }
-
     if (currentPassword === "wrong" || (user?.password && user.password !== currentPassword)) {
       throw new Error("Current password is incorrect.");
     }
@@ -196,18 +235,51 @@ export function useAuth() {
   /**
    * Log out the current user, clear session cookies, and notify with toast
    */
-  const logout = async () => {
+  const logout = async (customRedirect) => {
     try {
+      let currentPath = "";
       if (typeof window !== "undefined") {
+        currentPath = window.location.pathname + window.location.search;
         localStorage.removeItem("findora_demo_user");
+        localStorage.setItem("findora_logged_out", "true");
+        syncAuthCookies(null);
         setDemoUser(null);
+        setDbRole(null);
+        setDbImage(null);
+        window.dispatchEvent(new Event("findora_user_updated"));
+        window.dispatchEvent(new Event("findora_user_logged_out"));
       }
       if (authClient?.signOut) {
         await authClient.signOut();
       }
       toast.success("Logged out successfully");
-      router.push("/login");
-      router.refresh();
+
+      let redirectSource = customRedirect;
+      if (!redirectSource && typeof window !== "undefined") {
+        const p = window.location.pathname;
+        const s = window.location.search;
+        // If user logged out while on a protected route or details page, preserve return path
+        if (
+          p.startsWith("/dashboard") ||
+          p.startsWith("/admin") ||
+          p.startsWith("/reports/") ||
+          p.startsWith("/profile") ||
+          p.startsWith("/match-radar") ||
+          (p !== "/" && !p.startsWith("/login") && !p.startsWith("/register"))
+        ) {
+          redirectSource = p + s;
+        }
+      }
+
+      const targetUrl = redirectSource
+        ? `/login?redirect=${encodeURIComponent(redirectSource)}`
+        : "/login";
+
+      if (typeof window !== "undefined") {
+        window.location.href = targetUrl;
+      } else {
+        router.push(targetUrl);
+      }
     } catch (err) {
       console.error("Sign out error:", err);
       toast.error(err?.message || "Failed to log out");
@@ -220,6 +292,7 @@ export function useAuth() {
     loading,
     isAdmin,
     logout,
+    loginDemoUser,
     updateProfile,
     changePassword,
     refreshUser,

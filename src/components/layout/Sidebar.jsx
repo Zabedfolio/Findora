@@ -14,14 +14,12 @@ import {
   Globe,
   PlusCircle,
   X,
-  Sparkles,
+  LogOut,
   Handshake,
   ShieldAlert,
   Users,
   MessageSquareWarning,
   Flame,
-  ArrowRightLeft,
-  Shield,
   Activity,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
@@ -163,16 +161,17 @@ function NavLinkItem({ item, collapsed, onNavigate, activeTab, onSelectTab }) {
 
 function NavContent({ collapsed, onToggleCollapse, onNavigate, activeTab, onSelectTab }) {
   const pathname = usePathname();
-  const { user, isAdmin, updateProfile } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
 
   // Role-based sidebar detection:
   // Show admin items if user role is admin, or if current page is in /admin route
   const isAdminView = user?.role === "admin" || (pathname && pathname.startsWith("/admin"));
 
-  // Quick toggle role for pairing/demo verification
-  const handleToggleRole = () => {
-    const nextRole = user?.role === "admin" ? "user" : "admin";
-    updateProfile({ role: nextRole });
+  const handleSignOut = async () => {
+    onNavigate?.();
+    if (logout) {
+      await logout();
+    }
   };
 
   return (
@@ -387,68 +386,97 @@ function NavContent({ collapsed, onToggleCollapse, onNavigate, activeTab, onSele
         )}
       </div>
 
-      {/* Bottom Footer Card: Weekly Target for User, System Telemetry for Admin */}
-      {!collapsed && (
-        <div className="m-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#9ae600]/20 via-slate-900/40 to-slate-950 p-[1px] border border-[#9ae600]/30 shadow-md">
-          <div className="rounded-[15px] bg-white/95 dark:bg-[#070b04]/95 p-3.5 backdrop-blur">
-            {isAdminView ? (
-              <div>
-                <div className="flex items-center justify-between text-[11.5px] font-bold text-slate-900 dark:text-white">
-                  <span className="flex items-center gap-1.5">
-                    <Shield size={14} className="text-emerald-500" />
-                    Admin Guard Active
-                  </span>
-                  <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    Live
-                  </span>
-                </div>
-                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                  Role: <strong className="text-emerald-500 capitalize">{user?.role || "Admin"}</strong>. All admin controls active.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleToggleRole}
-                  className="mt-2.5 w-full flex items-center justify-center gap-1.5 py-1 px-2 rounded-lg text-[10px] font-mono font-bold uppercase bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
-                  title="Switch role between Admin and User for quick testing"
-                >
-                  <ArrowRightLeft size={11} />
-                  <span>Toggle Role ({user?.role === "admin" ? "to User" : "to Admin"})</span>
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div className="flex items-center justify-between text-[11.5px] font-bold text-slate-900 dark:text-white">
-                  <span className="flex items-center gap-1.5">
-                    <Sparkles size={14} className="text-[#72a800] dark:text-[#9ae600]" />
-                    Weekly Target
-                  </span>
-                  <span className="text-[10px] font-mono font-bold text-[#72a800] dark:text-[#9ae600]">
-                    82% Reunited
-                  </span>
-                </div>
-                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                  41 of 50 lost items safely reunited.
-                </p>
-                <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-[#9ae600] shadow-[0_0_8px_#9ae600]"
-                    style={{ width: "82%" }}
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleToggleRole}
-                  className="mt-2.5 w-full flex items-center justify-center gap-1.5 py-1 px-2 rounded-lg text-[10px] font-mono font-bold uppercase bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
-                  title="Switch role between User and Admin for quick testing"
-                >
-                  <ArrowRightLeft size={11} />
-                  <span>Switch to Admin Mode</span>
-                </button>
-              </div>
-            )}
+      {/* Bottom Footer: User Profile & Sign Out */}
+      <div
+        className={cn(
+          "border-t border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-white/[0.02]",
+          collapsed ? "p-2.5 pb-10" : "p-3 pb-10"
+        )}
+      >
+        {collapsed ? (
+          <div className="flex flex-col items-center gap-2">
+            <Link
+              href="/dashboard/profile"
+              onClick={onNavigate}
+              title={`${user?.name || "Member"} (${user?.role || "user"})`}
+              className="relative w-9 h-9 rounded-full overflow-hidden ring-2 ring-slate-200 dark:ring-white/10 hover:ring-[#9ae600] transition-all group shrink-0"
+            >
+              <img
+                src={user?.image || "/default-avatar.png"}
+                alt={user?.name || "User"}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = "/default-avatar.png";
+                }}
+              />
+              <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#9ae600] border-2 border-white dark:border-slate-900" />
+            </Link>
+
+            <button
+              type="button"
+              id="sidebar-signout-btn-collapsed"
+              onClick={handleSignOut}
+              title="Sign Out"
+              className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 dark:text-slate-400 dark:hover:text-rose-400 transition-colors cursor-pointer"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="space-y-2">
+            {/* User Capsule */}
+            <Link
+              href="/dashboard/profile"
+              onClick={onNavigate}
+              className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-100/80 dark:hover:bg-white/[0.06] transition-colors group cursor-pointer"
+            >
+              <div className="relative w-8 h-8 rounded-full overflow-hidden ring-1 ring-slate-200 dark:ring-white/10 group-hover:ring-[#9ae600] transition-all shrink-0">
+                <img
+                  src={user?.image || "/default-avatar.png"}
+                  alt={user?.name || "User"}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "/default-avatar.png";
+                  }}
+                />
+                <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#9ae600] border-2 border-white dark:border-slate-900" />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate font-heading group-hover:text-[#598c00] dark:group-hover:text-[#9ae600] transition-colors">
+                    {user?.name || "Findora Member"}
+                  </p>
+                  <span
+                    className={cn(
+                      "text-[9px] font-mono uppercase px-1.5 py-0.2 rounded font-bold shrink-0",
+                      isAdmin
+                        ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                        : "bg-slate-200/80 dark:bg-white/10 text-slate-700 dark:text-slate-300"
+                    )}
+                  >
+                    {user?.role || "user"}
+                  </span>
+                </div>
+                <p className="text-[10.5px] text-slate-400 dark:text-slate-500 truncate">
+                  {user?.email || "Account settings"}
+                </p>
+              </div>
+            </Link>
+
+            {/* Dedicated Sign Out Button */}
+            <button
+              type="button"
+              id="sidebar-signout-btn"
+              onClick={handleSignOut}
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50/60 dark:bg-rose-950/20 hover:bg-rose-100/80 dark:hover:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/30 transition-colors cursor-pointer group"
+            >
+              <LogOut size={13} className="transition-transform group-hover:-translate-x-0.5" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -13,8 +13,6 @@ import {
   FileText,
   Handshake,
 } from "lucide-react";
-import Sidebar from "@/components/layout/Sidebar";
-import Topbar from "@/components/layout/Topbar";
 
 import {
   ALL_ITEMS,
@@ -70,9 +68,6 @@ const QUICK_WORKSPACES = [
 ];
 
 function DashboardContent() {
-  const [light, setLight] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [range, setRange] = useState("12m");
   const [segment, setSegment] = useState("all");
   const [location, setLocation] = useState("all");
@@ -104,10 +99,6 @@ function DashboardContent() {
     }
     window.history.pushState({}, "", url.toString());
   };
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("light", light);
-  }, [light]);
 
   const days = RANGES[range].days;
   const windowStart = NOW - days * DAY;
@@ -162,41 +153,8 @@ function DashboardContent() {
   };
 
   return (
-    <div className="grain min-h-screen bg-slate-50/60 dark:bg-[#070905] text-slate-900 dark:text-white transition-colors">
-      {/* Findora Theme Ambient Glowing Orbs */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/4 h-[480px] w-[480px] rounded-full bg-[#9ae600]/[0.10] blur-[140px] dark:bg-[#9ae600]/[0.08]" />
-        <div className="absolute right-[-120px] top-1/3 h-[420px] w-[420px] rounded-full bg-emerald-500/[0.08] blur-[140px] dark:bg-emerald-500/[0.06]" />
-        <div className="absolute bottom-[-160px] left-[-100px] h-[420px] w-[420px] rounded-full bg-[#9ae600]/[0.07] blur-[140px]" />
-      </div>
-
-      {/* Sidebar with functional collapse / expand state and in-dashboard tab switching */}
-      <Sidebar
-        mobileOpen={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        activeTab={activeTab}
-        onSelectTab={handleSelectTab}
-      />
-
-      {/* Main Content Area */}
-      <div
-        className={`relative transition-all duration-300 ${
-          sidebarCollapsed ? "lg:pl-[76px]" : "lg:pl-[250px]"
-        }`}
-      >
-        <div className="mx-auto max-w-[1480px] px-4 pb-14 sm:px-6 lg:px-8">
-          <Topbar
-            light={light}
-            onToggleTheme={() => setLight((current) => !current)}
-            onOpenMenu={() => setMenuOpen(true)}
-            collapsed={sidebarCollapsed}
-            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-            onOpenProfile={() => handleSelectTab("profile")}
-          />
-
-          {/* TAB 1: PROFILE & SETTINGS (In-Dashboard View) */}
+    <div className="space-y-6">
+      {/* TAB 1: PROFILE & SETTINGS (In-Dashboard View) */}
           {activeTab === "profile" && <ProfileView />}
 
           {/* TAB 2: CLAIMS & VERIFICATION (In-Dashboard View) */}
@@ -420,11 +378,9 @@ function DashboardContent() {
             </div>
           )}
 
-          <p className="mt-10 text-center text-[11.5px] font-mono text-slate-400 dark:text-slate-600">
-            Findora Workspace · Synchronized Telemetry System
-          </p>
-        </div>
-      </div>
+      <p className="mt-10 text-center text-[11.5px] font-mono text-slate-400 dark:text-slate-600">
+        Findora Workspace · Synchronized Telemetry System
+      </p>
     </div>
   );
 }

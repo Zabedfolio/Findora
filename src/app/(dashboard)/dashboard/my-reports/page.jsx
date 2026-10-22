@@ -26,7 +26,6 @@ import {
   ShieldCheck,
   ChevronDown,
 } from "lucide-react";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import useAuth from "@/hooks/useAuth";
 import {
   getAllUnifiedReports,
@@ -238,8 +237,7 @@ export default function MyReportsPage() {
   };
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-slate-50/60 dark:bg-[#070905] text-slate-900 dark:text-white py-8 sm:py-12 transition-colors">
+    <div className="min-h-screen bg-slate-50/60 dark:bg-[#070905] text-slate-900 dark:text-white py-8 sm:py-12 transition-colors">
         {/* Findora Theme Ambient Glowing Orbs */}
         <div className="pointer-events-none fixed inset-0 overflow-hidden">
           <div className="absolute -top-40 left-1/4 h-[480px] w-[480px] rounded-full bg-[#9ae600]/[0.08] blur-[140px]" />
@@ -896,6 +894,5 @@ export default function MyReportsPage() {
           </div>
         )}
       </div>
-    </ProtectedRoute>
   );
 }

@@ -11,7 +11,6 @@ import {
   PhoneCall,
   QrCode,
   UserCheck,
-  Sparkles,
 } from "lucide-react";
 
 export default function SafeHandoverSimulator() {

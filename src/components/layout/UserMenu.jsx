@@ -142,6 +142,13 @@ export default function UserMenu({ user: propUser, isAdmin: propIsAdmin, logout:
                   <p className="text-sm font-bold text-slate-950 dark:text-white truncate font-heading">
                     {displayName}
                   </p>
+                  <span className={`text-[10px] font-mono uppercase px-1.5 py-0.2 rounded font-bold ${
+                    isAdmin
+                      ? "bg-[#9ae600]/20 text-[#598c00] dark:text-[#9ae600]"
+                      : "bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300"
+                  }`}>
+                    {user.role || "user"}
+                  </span>
                 </div>
                 {displayEmail && (
                   <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">

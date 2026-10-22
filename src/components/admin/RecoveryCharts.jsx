@@ -27,7 +27,6 @@ import {
   Search,
   PackageCheck,
   CheckCircle2,
-  Sparkles,
 } from "lucide-react";
 import { ALL_ITEMS, bucketize, aggregateByCategory } from "@/lib/data";
 import { cn } from "@/utils/cn";

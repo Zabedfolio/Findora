@@ -10,7 +10,7 @@ import {
   Lock,
   Bell,
   Award,
-  Sparkles,
+  Zap,
   Camera,
   CheckCircle2,
   Fingerprint,
@@ -305,13 +305,13 @@ export default function ProfileView() {
               Successfully turned in 3+ items with verified handover confirmations.
             </p>
             <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-mono font-bold text-[#72a800] dark:text-[#9ae600]">
-              <Sparkles size={12} /> ACTIVE BADGE
+              <ShieldCheck size={12} /> ACTIVE BADGE
             </span>
           </div>
 
           <div className="p-5 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">
             <div className="w-9 h-9 rounded-xl bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600] flex items-center justify-center mb-3">
-              <Sparkles size={18} />
+              <Zap size={18} />
             </div>
             <h4 className="text-xs font-bold text-slate-900 dark:text-white">Fast Responder</h4>
             <p className="mt-1 text-[11px] text-slate-500">

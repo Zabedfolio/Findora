@@ -12,7 +12,6 @@ import {
   AlertCircle,
   FileText,
   Search,
-  Sparkles,
   ArrowRight,
   Loader2,
   Check,

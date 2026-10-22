@@ -3,14 +3,12 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft, User, ShieldCheck } from "lucide-react";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import ProfileForm from "@/components/auth/ProfileForm";
 import ChangePasswordForm from "@/components/auth/ChangePasswordForm";
 
 export default function DashboardProfilePage() {
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-slate-50/60 dark:bg-[#070905] text-slate-900 dark:text-white py-8 sm:py-12 transition-colors">
+    <div className="min-h-screen bg-slate-50/60 dark:bg-[#070905] text-slate-900 dark:text-white py-8 sm:py-12 transition-colors">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           {/* Header Navigation */}
           <div>
@@ -46,6 +44,5 @@ export default function DashboardProfilePage() {
           <ChangePasswordForm />
         </div>
       </div>
-    </ProtectedRoute>
   );
 }

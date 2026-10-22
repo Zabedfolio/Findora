@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Sparkles, MapPin, ArrowRight } from "lucide-react";
+import { CheckCircle2, MapPin, ArrowRight } from "lucide-react";
 import { getAllUnifiedReports } from "@/services/reportService";
 
 /**
@@ -34,7 +34,7 @@ export default function MatchSuggestions({ currentReport }) {
     <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm">
       <div className="flex items-center justify-between mb-3.5">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-[#7dbd00] dark:text-[#9ae600]" />
+          <CheckCircle2 className="w-4 h-4 text-[#7dbd00] dark:text-[#9ae600]" />
           <h4 className="text-sm font-bold text-slate-900 dark:text-white font-heading">
             Potential Matches
           </h4>
