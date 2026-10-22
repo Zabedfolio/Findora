@@ -1,12 +1,16 @@
-import StatsCards from '@/components/dashboard/StatsCards';
+import ClaimCard from '@/components/claims/ClaimCard';
 import React from 'react';
 
 const demoPage = () => {
     return (
         <div>
-            <StatsCards></StatsCards>
+            <ClaimCard></ClaimCard>
         </div>
     );
 };
 
 export default demoPage;
+
+
+
+
