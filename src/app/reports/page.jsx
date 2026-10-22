@@ -33,6 +33,7 @@ function ReportsContent() {
       from: searchParams.get("from") || "",
       to: searchParams.get("to") || "",
       sort: searchParams.get("sort") || "newest",
+      filter: searchParams.get("filter") || "",
       page: Number(searchParams.get("page")) || 1,
       limit: 9,
     };
@@ -92,11 +93,26 @@ function ReportsContent() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white tracking-tight font-heading">
-              Explore Reports
+              {params.filter === "my-reports" ? "My Listings" : "Explore Reports"}
             </h1>
             <p className="mt-1.5 text-sm sm:text-base text-slate-500 dark:text-slate-400 max-w-2xl">
-              Browse lost and found items reported across Bangladesh. Search, filter, or report an item to help reunite belongings.
+              {params.filter === "my-reports"
+                ? "Manage and monitor the status of lost and found items you have reported."
+                : "Browse lost and found items reported across Bangladesh. Search, filter, or report an item to help reunite belongings."}
             </p>
+            {params.filter === "my-reports" && (
+              <div className="mt-3 flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30">
+                  Filtered: My Reports
+                </span>
+                <Link
+                  href="/reports"
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white underline underline-offset-4"
+                >
+                  View All Platform Reports
+                </Link>
+              </div>
+            )}
           </div>
 
           <Link

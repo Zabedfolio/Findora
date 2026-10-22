@@ -9,7 +9,7 @@ import ReportForm from "@/components/reports/ReportForm";
 import { createReport } from "@/services/reportService";
 import useAuth from "@/hooks/useAuth";
 import toast from "@/lib/toast";
-import { ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, ShieldCheck, FilePlus } from "lucide-react";
 
 export default function NewReportPage() {
   const router = useRouter();
@@ -61,7 +61,7 @@ export default function NewReportPage() {
           {/* Form Header Card */}
           <div className="mb-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#9ae600]/15 border border-[#9ae600]/30 text-[#4b7a00] dark:text-[#9ae600] text-xs font-semibold mb-3">
-              <Sparkles className="w-3.5 h-3.5" />
+              <FilePlus className="w-3.5 h-3.5" />
               <span>Community Lost &amp; Found Network</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white font-heading">

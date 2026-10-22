@@ -1,15 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
-import { Handshake, HelpCircle, Check, Loader2, Sparkles, X, ShieldAlert } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { Handshake, HelpCircle, Check, Loader2, ShieldCheck, X, ShieldAlert, Lock } from "lucide-react";
 import toast from "@/lib/toast";
 import useAuth from "@/hooks/useAuth";
 
 /**
  * ClaimButton Component:
  * Interactive claim action allowing visitors to claim a found item or report finding a lost item.
+ * Strictly requires authentication; guests are prompted and redirected to login.
  */
 export default function ClaimButton({ report }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [claimProof, setClaimProof] = useState("");
@@ -31,8 +35,29 @@ export default function ClaimButton({ report }) {
     );
   }
 
+  const handleOpenClaim = () => {
+    if (!user) {
+      toast.error("Please sign in to submit a claim or notification.");
+      const redirectUrl = pathname
+        ? `/login?redirect=${encodeURIComponent(pathname)}`
+        : "/login";
+      router.push(redirectUrl);
+      return;
+    }
+    setIsOpen(true);
+  };
+
   const handleSubmitClaim = async (e) => {
     e.preventDefault();
+    if (!user) {
+      toast.error("You must be logged in to submit a claim.");
+      const redirectUrl = pathname
+        ? `/login?redirect=${encodeURIComponent(pathname)}`
+        : "/login";
+      router.push(redirectUrl);
+      return;
+    }
+
     if (!claimProof.trim()) {
       toast.error("Please provide verification details to prove ownership.");
       return;
@@ -54,7 +79,7 @@ export default function ClaimButton({ report }) {
     <>
       <div className="p-5 rounded-3xl bg-gradient-to-br from-[#9ae600]/10 via-[#9ae600]/5 to-transparent border border-[#9ae600]/30 shadow-xs">
         <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="w-4 h-4 text-[#7cb800] dark:text-[#9ae600]" />
+          <ShieldCheck className="w-4 h-4 text-[#7cb800] dark:text-[#9ae600]" />
           <h4 className="text-sm font-bold text-slate-900 dark:text-white font-heading">
             {isFound ? "Is this your item?" : "Have you seen this item?"}
           </h4>
@@ -74,11 +99,20 @@ export default function ClaimButton({ report }) {
         ) : (
           <button
             type="button"
-            onClick={() => setIsOpen(true)}
+            onClick={handleOpenClaim}
             className="w-full py-3.5 px-4 rounded-2xl bg-[#9ae600] hover:bg-[#88cc00] active:scale-98 text-slate-950 font-bold text-sm transition-all shadow-[0_4px_18px_rgba(154,230,0,0.35)] cursor-pointer flex items-center justify-center gap-2"
           >
-            <Handshake className="w-4 h-4" />
-            <span>{isFound ? "Claim This Item" : "I Found This Item"}</span>
+            {user ? (
+              <>
+                <Handshake className="w-4 h-4" />
+                <span>{isFound ? "Claim This Item" : "I Found This Item"}</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4" />
+                <span>Sign In to {isFound ? "Claim Item" : "Report Finding"}</span>
+              </>
+            )}
           </button>
         )}
       </div>

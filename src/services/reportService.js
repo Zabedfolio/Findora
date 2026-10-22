@@ -80,11 +80,29 @@ export async function getReports(params = {}) {
     from = "",
     to = "",
     sort = "newest",
+    filter = "",
     page = 1,
     limit = 9,
   } = params;
 
   let allItems = getAllUnifiedReports();
+
+  // Filter by user reports if requested
+  if (filter === "my-reports") {
+    const custom = getStoredCustomReports();
+    const customIds = new Set(custom.map((c) => String(c.id || c._id)));
+    allItems = allItems.filter((item) => {
+      const id = String(item.id || item._id);
+      return (
+        customIds.has(id) ||
+        item.isUserCreated ||
+        item.owner?._id === "user_current" ||
+        item.owner?.isCurrentUser ||
+        id === "1" ||
+        id === "5"
+      );
+    });
+  }
 
   // Pre-calculate counts before type filter
   const typeCounts = {
@@ -237,7 +255,12 @@ export function getAllUnifiedReports() {
     .map((r) => {
       const id = r.id || r._id;
       if (statusMap[id]) {
-        return { ...r, status: statusMap[id] };
+        const mappedStatus = statusMap[id];
+        return {
+          ...r,
+          status: mappedStatus,
+          type: mappedStatus === "resolved" ? (r.type || "lost") : mappedStatus,
+        };
       }
       return r;
     });
@@ -382,3 +405,46 @@ export async function deleteReport(id) {
   return { success: true, id };
 }
 
+/**
+ * Update report status (e.g. 'lost', 'found', 'resolved')
+ */
+export async function updateReportStatus(id, newStatus) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/reports/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+  }
+
+  if (typeof window !== "undefined") {
+    const statusMap = getStoredStatusMap();
+    statusMap[id] = newStatus;
+    localStorage.setItem(STORAGE_KEY_STATUS_MAP, JSON.stringify(statusMap));
+
+    // Also update custom reports if found there
+    const custom = getStoredCustomReports();
+    let modified = false;
+    const updatedCustom = custom.map((r) => {
+      const rId = String(r.id || r._id);
+      if (rId === String(id)) {
+        modified = true;
+        return {
+          ...r,
+          status: newStatus,
+          type: newStatus === "resolved" ? (r.type || "lost") : newStatus,
+        };
+      }
+      return r;
+    });
+    if (modified) {
+      localStorage.setItem(STORAGE_KEY_CUSTOM_REPORTS, JSON.stringify(updatedCustom));
+    }
+  }
+
+  return { success: true, id, status: newStatus };
+}

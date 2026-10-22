@@ -1,26 +1,28 @@
-"use client";
-
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import toast from "@/lib/toast";
 import { authClient } from "@/lib/auth-client";
+import useAuth from "@/hooks/useAuth";
 import {
   Mail,
   Lock,
   ArrowRight,
   Eye,
   EyeOff,
-  Sparkles,
   ShieldCheck,
   CheckCircle2,
   MapPin,
   Clock,
   ArrowLeft,
+  User,
 } from "lucide-react";
 
-export default function SignInForm() {
+function SignInFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTarget = searchParams?.get("redirect") || "/dashboard";
+  const { loginDemoUser } = useAuth();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -67,16 +69,36 @@ export default function SignInForm() {
         await new Promise((resolve) => setTimeout(resolve, 850));
       }
 
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("findora_logged_out");
+      }
+
       toast.success("Welcome back! Signed in successfully.");
 
-      // Redirect to reports / dashboard
-      router.push("/reports");
+      // Redirect to target destination
+      if (typeof window !== "undefined") {
+        window.location.href = redirectTarget;
+      } else {
+        router.push(redirectTarget);
+        router.refresh();
+      }
     } catch (err) {
       const msg = err.message || "Invalid email or password. Please try again.";
       setError(msg);
       toast.error(msg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDemoSignIn = (targetRole) => {
+    loginDemoUser(targetRole);
+    toast.success(`Signed in as Demo ${targetRole === "admin" ? "Administrator" : "Community Member"}!`);
+    if (typeof window !== "undefined") {
+      window.location.href = redirectTarget;
+    } else {
+      router.push(redirectTarget);
+      router.refresh();
     }
   };
 
@@ -129,7 +151,7 @@ export default function SignInForm() {
               </Link>
 
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[#9ae600] text-xs font-semibold">
-                <Sparkles className="w-3.5 h-3.5" />
+                <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Intelligent Lost &amp; Found Network</span>
               </div>
             </div>
@@ -362,6 +384,36 @@ export default function SignInForm() {
                   </>
                 )}
               </button>
+
+              {/* Quick Role Testing / Demo Access */}
+              <div className="mt-5 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/10">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Quick Role Testing
+                  </span>
+                  <span className="text-[10px] text-[#72a800] dark:text-[#9ae600] font-semibold">
+                    Instant Sign In
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDemoSignIn("admin")}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-[#9ae600] text-slate-950 hover:bg-[#86c800] transition-all cursor-pointer shadow-xs"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Admin Demo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDemoSignIn("user")}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white transition-all cursor-pointer shadow-xs"
+                  >
+                    <User className="w-3.5 h-3.5" />
+                    <span>Member Demo</span>
+                  </button>
+                </div>
+              </div>
             </form>
 
             {/* Switch to Sign Up */}
@@ -388,3 +440,12 @@ export default function SignInForm() {
     </div>
   );
 }
+
+export default function SignInForm() {
+  return (
+    <Suspense fallback={null}>
+      <SignInFormContent />
+    </Suspense>
+  );
+}
+
