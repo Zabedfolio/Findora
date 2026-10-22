@@ -276,3 +276,110 @@ export async function cancelClaim(id, reason = "Withdrawn by claimant") {
   }
   return null;
 }
+
+/**
+ * Finder approves ownership claim with an optional note
+ */
+export async function approveClaim(id, note = "") {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/claims/${id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note }),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Backend API unreachable, updating local claim store:", e.message);
+    }
+  }
+
+  const all = getStoredClaims();
+  const index = all.findIndex((c) => c.id === id);
+  if (index !== -1) {
+    const claim = all[index];
+    const generatedOtp = `FP-${Math.floor(1000 + Math.random() * 9000)}`;
+    const updated = {
+      ...claim,
+      status: "approved",
+      statusLabel: "Approved - Ready for Handover",
+      statusDescription:
+        "Finder verified your ownership claim! You can now coordinate the safe handover.",
+      reviewNotes: note || "Finder confirmed proof and authorized handover.",
+      handover: {
+        ...(claim.handover || {}),
+        isEligible: true,
+        status: "ready",
+        handoverCode: claim.handover?.handoverCode || generatedOtp,
+        locationName:
+          claim.handover?.locationName || claim.location || "Designated Safe Exchange Spot",
+        timeSlot: claim.handover?.timeSlot || "Coordinate with finder to finalize time",
+      },
+      timeline: [
+        ...(claim.timeline || []).map((t) => ({ ...t, current: false })),
+        {
+          step: (claim.timeline?.length || 0) + 1,
+          title: "Claim Approved by Finder",
+          time: "Just now",
+          description: note || "Finder confirmed identifying proof.",
+          completed: true,
+          current: true,
+        },
+      ],
+    };
+    all[index] = updated;
+    saveStoredClaims(all);
+    return updated;
+  }
+  return null;
+}
+
+/**
+ * Finder rejects ownership claim with an optional note
+ */
+export async function rejectClaim(id, note = "") {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/claims/${id}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note }),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Backend API unreachable, updating local claim store:", e.message);
+    }
+  }
+
+  const all = getStoredClaims();
+  const index = all.findIndex((c) => c.id === id);
+  if (index !== -1) {
+    const claim = all[index];
+    const updated = {
+      ...claim,
+      status: "rejected",
+      statusLabel: "Verification Failed",
+      statusDescription:
+        note || "The finder reviewed the submitted proof and concluded it does not match the item.",
+      reviewNotes: note || "Verification details did not match the physical item.",
+      timeline: [
+        ...(claim.timeline || []).map((t) => ({ ...t, current: false })),
+        {
+          step: (claim.timeline?.length || 0) + 1,
+          title: "Claim Declined",
+          time: "Just now",
+          description: note || "Proof details did not match.",
+          completed: true,
+          current: true,
+        },
+      ],
+    };
+    all[index] = updated;
+    saveStoredClaims(all);
+    return updated;
+  }
+  return null;
+}
+

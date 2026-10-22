@@ -17,7 +17,7 @@ export const demoClaims = [
     imageUrl:
       "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=800&q=80",
     status: "approved",
-    statusLabel: "Approved — Ready for Handover",
+    statusLabel: "Approved - Ready for Handover",
     statusDescription: "Finder verified your ownership claim! You can now coordinate the safe handover.",
     claimantProof: {
       description:
