@@ -4,11 +4,12 @@ import { useId } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { LayoutGrid, PackageSearch, LocateFixed, X, Sparkles } from "lucide-react";
+import { LayoutGrid, PackageSearch, LocateFixed, X, Sparkles, ShieldCheck } from "lucide-react";
 import { cn } from "../../utils/cn";
 
 const NAV = [
   { icon: LayoutGrid, label: "Dashboard", href: "/dashboard" },
+  { icon: ShieldCheck, label: "Claims & Handover", href: "/dashboard/claims" },
   { icon: PackageSearch, label: "Reports & listings", href: "/reports" },
 ];
 

@@ -30,8 +30,9 @@ const ADMIN_TOOLS = [
   {
     icon: ShieldAlert,
     title: "Claims & safety review",
-    description: "Review ownership claims and suspicious activity.",
-    status: "Planned",
+    description: "Track and review ownership claims, verification status, and safe handovers.",
+    href: "/dashboard/claims",
+    action: "View claims",
   },
   {
     icon: UsersRound,

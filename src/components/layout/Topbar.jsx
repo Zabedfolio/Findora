@@ -22,7 +22,14 @@ function IconButton({ children, onClick, label, dot }) {
   );
 }
 
-export default function Topbar({ light, onToggleTheme, onOpenMenu }) {
+export default function Topbar({
+  light,
+  onToggleTheme,
+  onOpenMenu,
+  section = "Administration",
+  title = "Platform overview",
+  badge = "DEMO",
+}) {
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "short",
     month: "long",
@@ -45,14 +52,14 @@ export default function Topbar({ light, onToggleTheme, onOpenMenu }) {
           <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
             <span>Findora</span>
             <span className="text-slate-300 dark:text-slate-600">/</span>
-            <span className="text-slate-600 dark:text-slate-300">Administration</span>
+            <span className="text-slate-600 dark:text-slate-300">{section}</span>
           </div>
           <div className="mt-0.5 flex items-center gap-2.5">
             <h1 className="font-display truncate text-lg font-bold tracking-tight text-slate-900 sm:text-xl dark:text-white">
-              Platform overview
+              {title}
             </h1>
             <span className="hidden items-center rounded-full bg-amber-500/10 px-2.5 py-1 text-[10.5px] font-semibold text-amber-700 ring-1 ring-amber-500/20 sm:flex dark:text-amber-300">
-              DEMO
+              {badge}
             </span>
           </div>
         </div>
