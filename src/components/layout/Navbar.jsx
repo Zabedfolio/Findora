@@ -30,6 +30,10 @@ export default function Navbar() {
     setMobileMenuOpen(false);
   }, [pathname]);
 
+  if (pathname?.startsWith("/dashboard")) {
+    return null;
+  }
+
   const navLinks = [
     { href: "/reports", label: t("nav.browse") },
     { href: "/categories", label: t("nav.categories") },
