@@ -1,10 +1,10 @@
-import ClaimCard from '@/components/claims/ClaimCard';
+import ReviewCard from '@/components/reviews/ReviewCard';
 import React from 'react';
 
 const demoPage = () => {
     return (
         <div>
-            <ClaimCard></ClaimCard>
+            <ReviewCard></ReviewCard>
         </div>
     );
 };
