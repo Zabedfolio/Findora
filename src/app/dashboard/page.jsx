@@ -4,16 +4,17 @@ import Link from "next/link";
 import { ArrowUpRight, ClipboardList, PackageCheck, PackageSearch, Search, ShieldAlert, Timer, UsersRound } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
-import FilterBar from "@/components/FilterBar";
-import KpiCard from "@/components/KpiCard";
-import { Card, CardHeader } from "@/components/ui";
-import CategoryBars from "@/components/BarChart";
-import LocationList from "@/components/LocationList";
-import DonutChart from "@/components/DonutChart";
-import AreaChart from "@/components/AreaChart";
-import DataTable from "@/components/DataTable";
+
 import { ALL_ITEMS, DAY, NOW, RANGES, bucketize, computeKpis, aggregateByCategory, aggregateByStatus, topLocations } from "@/lib/data";
 import { fmtInt, fmtHours } from "@/lib/format";
+import FilterBar from "@/components/dashboard/FilterBar";
+import KpiCard from "@/components/dashboard/KpiCard";
+import { Card, CardHeader } from "@/components/dashboard/ui";
+import AreaChart from "@/components/dashboard/AreaChart";
+import DonutChart from "@/components/dashboard/DonutChart";
+import DataTable from "@/components/dashboard/DataTable";
+import LocationList from "@/components/dashboard/LocationList";
+import CategoryBars from "@/components/dashboard/BarChart";
 
 
 const delta = (cur, prev) => (prev > 0 ? ((cur - prev) / prev) * 100 : 0);
