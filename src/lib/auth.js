@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import { admin } from "better-auth/plugins";
+import { generateAndUploadVectorAvatar } from "@/lib/avatarService";
 
 const mongoUri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/findora";
 const client = new MongoClient(mongoUri);
@@ -23,6 +24,31 @@ export const auth = betterAuth({
                 required: false,
                 defaultValue: "user",
                 input: false,
+            },
+        },
+    },
+    databaseHooks: {
+        user: {
+            create: {
+                before: async (user) => {
+                    let image = user.image;
+                    if (!image || typeof image !== "string" || image.trim() === "") {
+                        try {
+                            image = await generateAndUploadVectorAvatar({
+                                name: user.name,
+                                email: user.email,
+                            });
+                        } catch (err) {
+                            console.warn("Failed to upload vector avatar to ImgBB on user creation:", err.message);
+                        }
+                    }
+                    return {
+                        data: {
+                            ...user,
+                            image: image || "",
+                        },
+                    };
+                },
             },
         },
     },

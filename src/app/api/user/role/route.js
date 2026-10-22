@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
+import { generateAndUploadVectorAvatar } from "@/lib/avatarService";
 
 /**
  * GET /api/user/role
  * Fetches the user's role directly from the MongoDB database.
+ * If the user does not have an image, automatically generates a vector avatar,
+ * uploads it to ImgBB, and sets the image link in the database.
  * Supports authentication via Better-Auth session or query parameter (?email=...).
  */
 export async function GET(request) {
@@ -52,6 +55,32 @@ export async function GET(request) {
 
     const role = userDoc.role || "user";
 
+    // If user has no image, automatically upload vector image to ImgBB and update MongoDB
+    let userImage = userDoc.image;
+    if (!userImage || typeof userImage !== "string" || userImage.trim() === "") {
+      try {
+        userImage = await generateAndUploadVectorAvatar({
+          name: userDoc.name,
+          email: userDoc.email,
+        });
+
+        if (userImage) {
+          await userCollection.updateOne(
+            { _id: userDoc._id },
+            {
+              $set: {
+                image: userImage,
+                updatedAt: new Date().toISOString(),
+              },
+            }
+          );
+          userDoc.image = userImage;
+        }
+      } catch (avatarErr) {
+        console.warn("Failed to generate/upload ImgBB avatar in GET /api/user/role:", avatarErr.message);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       role,
@@ -60,7 +89,7 @@ export async function GET(request) {
         name: userDoc.name,
         email: userDoc.email,
         role,
-        image: userDoc.image || "",
+        image: userDoc.image || userImage || "",
       },
       source: "database",
     });

@@ -38,8 +38,9 @@ export function useAuth() {
   }, []);
 
   const [dbRole, setDbRole] = useState(null);
+  const [dbImage, setDbImage] = useState(null);
 
-  // Synchronize role directly from MongoDB database
+  // Synchronize role and avatar image directly from MongoDB database
   useEffect(() => {
     const targetEmail =
       sessionData?.user?.email || demoUser?.email || "zabedfolio@gmail.com";
@@ -49,8 +50,9 @@ export function useAuth() {
     fetch(`/api/user/role?email=${encodeURIComponent(targetEmail)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (isMounted && data?.success && data?.role) {
-          setDbRole(data.role);
+        if (isMounted && data?.success) {
+          if (data?.role) setDbRole(data.role);
+          if (data?.user?.image) setDbImage(data.user.image);
         }
       })
       .catch((err) => {
@@ -71,10 +73,11 @@ export function useAuth() {
     role: "admin",
   };
 
-  // User object guaranteed to have real role from MongoDB
+  // User object guaranteed to have real role and ImgBB avatar from MongoDB
   const user = {
     ...rawUser,
     role: dbRole || rawUser?.role || "user",
+    image: dbImage || rawUser?.image || "/default-avatar.png",
   };
 
   const session = sessionData?.session || (demoUser ? { id: "demo-session" } : null);
