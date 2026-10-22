@@ -37,66 +37,52 @@ export default function AdminOverviewPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner / Welcome */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-[#071305] to-slate-950 p-6 sm:p-8 text-white border border-[#9ae600]/30 shadow-xl">
-        <div className="absolute right-0 top-0 -mt-12 -mr-12 w-64 h-64 bg-[#9ae600]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-1/3 bottom-0 -mb-12 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Quick Action Navigation Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-mono font-bold uppercase bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30">
+            <Shield size={11} />
+            Administrative Hub
+          </span>
+          <span className="text-xs text-slate-400 font-mono hidden sm:inline">v2.4 Live Telemetry</span>
+        </div>
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
-          <div className="max-w-2xl">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-mono font-bold uppercase bg-[#9ae600]/20 text-[#9ae600] border border-[#9ae600]/30">
-                <Shield size={11} />
-                Findora Administrative Suite
-              </span>
-              <span className="text-xs text-slate-400 font-mono">v2.4 Live</span>
-            </div>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              Platform Telemetry &amp; Control Center
-            </h2>
-            <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Real-time surveillance on metropolitan recovery metrics, hotspot density, user compliance, and automated fraud prevention.
-            </p>
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin/reports"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors"
+          >
+            <FileText size={13} className="text-[#9ae600]" />
+            <span>Listings</span>
+            <ArrowUpRight size={11} className="opacity-50" />
+          </Link>
 
-          {/* Quick Action Navigation Grid */}
-          <div className="grid grid-cols-2 gap-2.5 shrink-0">
-            <Link
-              href="/admin/reports"
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-xs font-semibold text-white transition-all hover:scale-[1.02]"
-            >
-              <FileText size={14} className="text-[#9ae600]" />
-              <span>Listings</span>
-              <ArrowUpRight size={12} className="ml-auto opacity-60" />
-            </Link>
+          <Link
+            href="/admin/reviews"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors"
+          >
+            <MessageSquareWarning size={13} className="text-amber-500" />
+            <span>Reviews</span>
+            <ArrowUpRight size={11} className="opacity-50" />
+          </Link>
 
-            <Link
-              href="/admin/reviews"
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-xs font-semibold text-white transition-all hover:scale-[1.02]"
-            >
-              <MessageSquareWarning size={14} className="text-amber-400" />
-              <span>Reviews</span>
-              <ArrowUpRight size={12} className="ml-auto opacity-60" />
-            </Link>
+          <Link
+            href="/admin/fraud"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors"
+          >
+            <ShieldAlert size={13} className="text-rose-500" />
+            <span>Fraud Hub</span>
+            <ArrowUpRight size={11} className="opacity-50" />
+          </Link>
 
-            <Link
-              href="/admin/fraud"
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-xs font-semibold text-white transition-all hover:scale-[1.02]"
-            >
-              <ShieldAlert size={14} className="text-rose-400" />
-              <span>Fraud Hub</span>
-              <ArrowUpRight size={12} className="ml-auto opacity-60" />
-            </Link>
-
-            <Link
-              href="/admin/users"
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-xs font-semibold text-white transition-all hover:scale-[1.02]"
-            >
-              <Users size={14} className="text-purple-400" />
-              <span>Users</span>
-              <ArrowUpRight size={12} className="ml-auto opacity-60" />
-            </Link>
-          </div>
+          <Link
+            href="/admin/users"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors"
+          >
+            <Users size={13} className="text-purple-400" />
+            <span>Users</span>
+            <ArrowUpRight size={11} className="opacity-50" />
+          </Link>
         </div>
       </div>
 

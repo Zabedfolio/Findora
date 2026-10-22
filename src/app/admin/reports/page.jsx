@@ -238,31 +238,6 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-5">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30">
-              <FileText size={18} />
-            </span>
-            <h2 className="font-display text-xl font-bold text-slate-950 dark:text-white">
-              Listing Management &amp; Verification
-            </h2>
-          </div>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Audit lost and found submissions, grant official verified badges, or remove fraudulent listings.
-          </p>
-        </div>
-
-        <Link
-          href="/reports/new"
-          className="btn-primary-glow inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-slate-950 self-start sm:self-auto shadow-md"
-        >
-          <Sparkles size={14} />
-          <span>Post Official Report</span>
-        </Link>
-      </div>
-
       {/* KPI Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">
@@ -368,6 +343,14 @@ export default function AdminReportsPage() {
               <option value="resolved">Resolved</option>
               <option value="removed">Removed Only</option>
             </select>
+
+            <Link
+              href="/reports/new"
+              className="btn-primary-glow inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-950 shadow-xs ml-auto"
+            >
+              <Sparkles size={13} />
+              <span>Post Official Report</span>
+            </Link>
           </div>
         </div>
 

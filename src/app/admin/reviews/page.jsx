@@ -219,34 +219,6 @@ export default function AdminReviewsPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-              <MessageSquareWarning size={18} />
-            </span>
-            <h2 className="font-display text-xl font-bold text-slate-950 dark:text-white">
-              Community Review Moderation
-            </h2>
-          </div>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Audit user testimonials, remove harassment or scam promotions, and protect community trust.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            saveReviews(INITIAL_REVIEWS);
-            toast.success("Demo reviews reset to initial state");
-          }}
-          className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-        >
-          Reset Demo Data
-        </button>
-      </div>
-
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">
@@ -340,6 +312,17 @@ export default function AdminReviewsPage() {
               <option value="4">4 Stars</option>
               <option value="5">5 Stars</option>
             </select>
+
+            <button
+              type="button"
+              onClick={() => {
+                saveReviews(INITIAL_REVIEWS);
+                toast.success("Demo reviews reset to initial state");
+              }}
+              className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer ml-auto"
+            >
+              Reset Demo Data
+            </button>
           </div>
         </div>
       </div>

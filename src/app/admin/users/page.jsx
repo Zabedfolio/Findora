@@ -274,34 +274,6 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-              <Users size={18} />
-            </span>
-            <h2 className="font-display text-xl font-bold text-slate-950 dark:text-white">
-              User Directory &amp; Role Management
-            </h2>
-          </div>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            View user profiles, assign administrative privileges, and manage account suspension states.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            saveUsers(INITIAL_USERS);
-            toast.success("User directory reset to default demo users");
-          }}
-          className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-        >
-          Reset User Data
-        </button>
-      </div>
-
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">
@@ -391,6 +363,17 @@ export default function AdminUsersPage() {
               <option value="active">Active Only</option>
               <option value="suspended">Suspended Only</option>
             </select>
+
+            <button
+              type="button"
+              onClick={() => {
+                saveUsers(INITIAL_USERS);
+                toast.success("User directory reset to default demo users");
+              }}
+              className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer ml-auto"
+            >
+              Reset User Data
+            </button>
           </div>
         </div>
       </div>
