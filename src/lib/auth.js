@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
+import { admin } from "better-auth/plugins";
 
 const mongoUri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/findora";
 const client = new MongoClient(mongoUri);
@@ -15,6 +16,22 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true,
     },
+    user: {
+        additionalFields: {
+            role: {
+                type: "string",
+                required: false,
+                defaultValue: "user",
+                input: false,
+            },
+        },
+    },
+    plugins: [
+        admin({
+            defaultRole: "user",
+            adminRoles: ["admin"],
+        }),
+    ],
     database: mongodbAdapter(db, {
         client,
     }),

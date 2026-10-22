@@ -1,10 +1,20 @@
-export const fmtInt = (n) => Math.round(n).toLocaleString("en-US");
-export const fmtPct = (n, dp = 1) => `${n.toFixed(dp)}%`;
-export const fmtMoney = (n) => `$${Math.round(n).toLocaleString("en-US")}`;
+export const fmtInt = (n) => {
+  const num = typeof n === "number" && !isNaN(n) ? n : 0;
+  return Math.round(num).toLocaleString("en-US");
+};
+export const fmtPct = (n, dp = 1) => {
+  const num = typeof n === "number" && !isNaN(n) ? n : 0;
+  return `${num.toFixed(dp)}%`;
+};
+export const fmtMoney = (n) => {
+  const num = typeof n === "number" && !isNaN(n) ? n : 0;
+  return `$${Math.round(num).toLocaleString("en-US")}`;
+};
 export const fmtHours = (h) => {
-  if (h <= 0) return "—";
-  if (h < 48) return `${Math.round(h)}h`;
-  return `${(h / 24).toFixed(1)}d`;
+  const num = typeof h === "number" && !isNaN(h) ? h : 0;
+  if (num <= 0) return "—";
+  if (num < 48) return `${Math.round(num)}h`;
+  return `${(num / 24).toFixed(1)}d`;
 };
 export const fmtDate = (ts) => new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 export const fmtDateShort = (ts) => new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });

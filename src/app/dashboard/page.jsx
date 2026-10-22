@@ -39,7 +39,11 @@ import CategoryBars from "@/components/dashboard/BarChart";
 import ProfileView from "@/components/dashboard/ProfileView";
 import ClaimsView from "@/components/dashboard/ClaimsView";
 
-const delta = (cur, prev) => (prev > 0 ? ((cur - prev) / prev) * 100 : 0);
+const delta = (cur = 0, prev = 0) => {
+  const c = Number(cur) || 0;
+  const p = Number(prev) || 0;
+  return p > 0 ? ((c - p) / p) * 100 : 0;
+};
 
 const QUICK_WORKSPACES = [
   {
@@ -243,9 +247,9 @@ function DashboardContent() {
 
                 <KpiCard
                   label="Successful returns"
-                  value={kpis.totalResolved}
+                  value={kpis.totalResolved ?? kpis.returned ?? 0}
                   format={fmtInt}
-                  delta={delta(kpis.totalResolved, prevKpis.totalResolved)}
+                  delta={delta(kpis.totalResolved ?? kpis.returned ?? 0, prevKpis.totalResolved ?? prevKpis.returned ?? 0)}
                   icon={PackageCheck}
                   iconClass="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-300"
                   spark={sparks.returned}

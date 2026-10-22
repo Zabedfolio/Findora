@@ -16,23 +16,47 @@ import {
   X,
   Sparkles,
   Handshake,
+  ShieldAlert,
+  Users,
+  MessageSquareWarning,
+  Flame,
+  ArrowRightLeft,
+  Shield,
+  Activity,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
+import useAuth from "@/hooks/useAuth";
 
-const NAV_MAIN = [
+// User Workspace Navigation Items
+const NAV_USER_MAIN = [
   { id: "overview", tabKey: "overview", icon: LayoutDashboard, label: "Overview & Analytics", href: "/dashboard" },
   { id: "reports", tabKey: "reports", icon: FileText, label: "My Reports", href: "/dashboard?tab=reports" },
   { id: "claims", tabKey: "claims", icon: Handshake, label: "Claims & Verification", href: "/dashboard?tab=claims" },
 ];
 
-const NAV_COMMUNITY = [
+const NAV_USER_COMMUNITY = [
   { icon: ShieldCheck, label: "Trust & Safety", href: "/trust" },
   { icon: Info, label: "About Findora", href: "/about" },
 ];
 
-const NAV_SECONDARY = [
+const NAV_USER_SECONDARY = [
   { id: "profile", tabKey: "profile", icon: User, label: "Profile & Settings", href: "/dashboard?tab=profile" },
   { icon: Globe, label: "Public Website", href: "/" },
+];
+
+// Admin Workspace Navigation Items
+const NAV_ADMIN_MAIN = [
+  { id: "admin-overview", icon: LayoutDashboard, label: "Overview & Metrics", href: "/admin" },
+  { id: "admin-reports", icon: FileText, label: "Manage Reports", href: "/admin/reports", badge: "Listings" },
+  { id: "admin-reviews", icon: MessageSquareWarning, label: "Review Moderation", href: "/admin/reviews", badge: "Mod" },
+  { id: "admin-fraud", icon: ShieldAlert, label: "Fraud & Abuse", href: "/admin/fraud", badge: "Alerts" },
+  { id: "admin-users", icon: Users, label: "User Management", href: "/admin/users", badge: "Staff" },
+];
+
+const NAV_ADMIN_SECONDARY = [
+  { id: "user-dashboard", icon: PackageSearch, label: "User Dashboard", href: "/dashboard" },
+  { id: "public-web", icon: Globe, label: "Public Website", href: "/" },
+  { id: "profile", tabKey: "profile", icon: User, label: "Profile & Settings", href: "/dashboard?tab=profile" },
 ];
 
 function NavLinkItem({ item, collapsed, onNavigate, activeTab, onSelectTab }) {
@@ -42,7 +66,12 @@ function NavLinkItem({ item, collapsed, onNavigate, activeTab, onSelectTab }) {
   const currentTab = activeTab || tabFromUrl || "overview";
 
   let isActive = false;
-  if (pathname === "/dashboard") {
+
+  if (item.href === "/admin") {
+    isActive = pathname === "/admin";
+  } else if (item.href.startsWith("/admin/")) {
+    isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(`${item.href}/`));
+  } else if (pathname === "/dashboard") {
     if (item.tabKey) {
       if (item.tabKey === "reports") {
         isActive = currentTab === "reports" || currentTab === "my-reports" || currentTab === "my-listings";
@@ -55,7 +84,7 @@ function NavLinkItem({ item, collapsed, onNavigate, activeTab, onSelectTab }) {
   } else {
     isActive =
       pathname === item.href ||
-      (item.href !== "/" && pathname.startsWith(`${item.href}/`));
+      (item.href !== "/" && item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`));
   }
 
   const handleClick = (e) => {
@@ -63,7 +92,6 @@ function NavLinkItem({ item, collapsed, onNavigate, activeTab, onSelectTab }) {
       e.preventDefault();
       onSelectTab(item.tabKey);
       if (onNavigate) onNavigate();
-      // Update URL query string smoothly without reload
       const url = new URL(window.location.href);
       if (item.tabKey === "overview") {
         url.searchParams.delete("tab");
@@ -107,7 +135,16 @@ function NavLinkItem({ item, collapsed, onNavigate, activeTab, onSelectTab }) {
         <>
           <span className="flex-1 truncate">{item.label}</span>
           {item.badge && (
-            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-[#9ae600]/20 text-[#629400] dark:text-[#9ae600] border border-[#9ae600]/40 leading-none">
+            <span
+              className={cn(
+                "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full border leading-none",
+                item.badge === "Alerts"
+                  ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30"
+                  : item.badge === "Mod"
+                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                  : "bg-[#9ae600]/20 text-[#629400] dark:text-[#9ae600] border-[#9ae600]/40"
+              )}
+            >
               {item.badge}
             </span>
           )}
@@ -125,6 +162,19 @@ function NavLinkItem({ item, collapsed, onNavigate, activeTab, onSelectTab }) {
 }
 
 function NavContent({ collapsed, onToggleCollapse, onNavigate, activeTab, onSelectTab }) {
+  const pathname = usePathname();
+  const { user, isAdmin, updateProfile } = useAuth();
+
+  // Role-based sidebar detection:
+  // Show admin items if user role is admin, or if current page is in /admin route
+  const isAdminView = user?.role === "admin" || (pathname && pathname.startsWith("/admin"));
+
+  // Quick toggle role for pairing/demo verification
+  const handleToggleRole = () => {
+    const nextRole = user?.role === "admin" ? "user" : "admin";
+    updateProfile({ role: nextRole });
+  };
+
   return (
     <div className="flex h-full flex-col justify-between select-none">
       {/* Top: Brand Header */}
@@ -137,7 +187,7 @@ function NavContent({ collapsed, onToggleCollapse, onNavigate, activeTab, onSele
         >
           {/* Logo */}
           <Link
-            href="/dashboard"
+            href={isAdminView ? "/admin" : "/dashboard"}
             onClick={onNavigate}
             className="flex items-center gap-2.5 shrink-0 group focus:outline-hidden"
           >
@@ -150,119 +200,252 @@ function NavContent({ collapsed, onToggleCollapse, onNavigate, activeTab, onSele
             </div>
             {!collapsed && (
               <div className="min-w-0">
-                <p className="font-display text-[16px] font-bold tracking-tight text-slate-950 dark:text-white leading-none">
-                  Findora
-                </p>
-                <p className="mt-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] text-[#72a800] dark:text-[#9ae600]">
-                  User Workspace
+                <div className="flex items-center gap-1.5">
+                  <p className="font-display text-[16px] font-bold tracking-tight text-slate-950 dark:text-white leading-none">
+                    Findora
+                  </p>
+                  {isAdminView && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  )}
+                </div>
+                <p className={cn(
+                  "mt-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em]",
+                  isAdminView
+                    ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
+                    : "text-[#72a800] dark:text-[#9ae600]"
+                )}>
+                  {isAdminView ? "Admin Control" : "User Workspace"}
                 </p>
               </div>
             )}
           </Link>
         </div>
 
-        {/* Action Button: New Report */}
+        {/* Action Button: New Report or Admin Center */}
         <div className={cn("pt-4 pb-2", collapsed ? "px-2" : "px-3")}>
-          <Link
-            href="/reports/new"
-            onClick={onNavigate}
-            title={collapsed ? "Report New Item" : undefined}
-            className={cn(
-              "btn-primary-glow flex items-center justify-center rounded-2xl text-slate-950 font-bold transition-all shadow-md group",
-              collapsed ? "p-3" : "gap-2 px-4 py-2.5 text-xs sm:text-sm"
-            )}
-          >
-            <PlusCircle size={17} className="shrink-0" />
-            {!collapsed && <span>Report Item</span>}
-          </Link>
+          {isAdminView ? (
+            <Link
+              href="/reports/new"
+              onClick={onNavigate}
+              title={collapsed ? "Post Official Report" : undefined}
+              className={cn(
+                "btn-primary-glow flex items-center justify-center rounded-2xl text-slate-950 font-bold transition-all shadow-md group",
+                collapsed ? "p-3" : "gap-2 px-4 py-2.5 text-xs sm:text-sm"
+              )}
+            >
+              <PlusCircle size={17} className="shrink-0" />
+              {!collapsed && <span>New Report</span>}
+            </Link>
+          ) : (
+            <Link
+              href="/reports/new"
+              onClick={onNavigate}
+              title={collapsed ? "Report New Item" : undefined}
+              className={cn(
+                "btn-primary-glow flex items-center justify-center rounded-2xl text-slate-950 font-bold transition-all shadow-md group",
+                collapsed ? "p-3" : "gap-2 px-4 py-2.5 text-xs sm:text-sm"
+              )}
+            >
+              <PlusCircle size={17} className="shrink-0" />
+              {!collapsed && <span>Report Item</span>}
+            </Link>
+          )}
         </div>
 
-        {/* Section 1: Main Workspace */}
-        <div className="mt-3 px-3">
-          {!collapsed && (
-            <p className="px-2 pb-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Workspace
-            </p>
-          )}
-          <nav aria-label="Main navigation" className="space-y-1">
-            {NAV_MAIN.map((item) => (
-              <NavLinkItem
-                key={item.href}
-                item={item}
-                collapsed={collapsed}
-                onNavigate={onNavigate}
-                activeTab={activeTab}
-                onSelectTab={onSelectTab}
-              />
-            ))}
-          </nav>
-        </div>
+        {/* ============================================================== */}
+        {/* ROLE-BASED NAVIGATION ITEMS                                    */}
+        {/* ============================================================== */}
 
-        {/* Section 2: Safety & Community */}
-        <div className="mt-4 px-3">
-          {!collapsed && (
-            <p className="px-2 pb-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Trust & Safety
-            </p>
-          )}
-          <nav aria-label="Community navigation" className="space-y-1">
-            {NAV_COMMUNITY.map((item) => (
-              <NavLinkItem
-                key={item.href}
-                item={item}
-                collapsed={collapsed}
-                onNavigate={onNavigate}
-                activeTab={activeTab}
-                onSelectTab={onSelectTab}
-              />
-            ))}
-          </nav>
-        </div>
+        {isAdminView ? (
+          /* =================== ADMIN SIDEBAR ITEMS =================== */
+          <>
+            {/* Section 1: Admin Control Modules */}
+            <div className="mt-3 px-3">
+              {!collapsed && (
+                <p className="px-2 pb-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  Administration
+                </p>
+              )}
+              <nav aria-label="Admin navigation" className="space-y-1">
+                {NAV_ADMIN_MAIN.map((item) => (
+                  <NavLinkItem
+                    key={item.href}
+                    item={item}
+                    collapsed={collapsed}
+                    onNavigate={onNavigate}
+                    activeTab={activeTab}
+                    onSelectTab={onSelectTab}
+                  />
+                ))}
+              </nav>
+            </div>
 
-        {/* Section 3: Account & System */}
-        <div className="mt-4 px-3">
-          {!collapsed && (
-            <p className="px-2 pb-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Account
-            </p>
-          )}
-          <nav aria-label="System navigation" className="space-y-1">
-            {NAV_SECONDARY.map((item) => (
-              <NavLinkItem
-                key={item.href}
-                item={item}
-                collapsed={collapsed}
-                onNavigate={onNavigate}
-                activeTab={activeTab}
-                onSelectTab={onSelectTab}
-              />
-            ))}
-          </nav>
-        </div>
+            {/* Section 2: Secondary / Switch to User Dashboard */}
+            <div className="mt-4 px-3">
+              {!collapsed && (
+                <p className="px-2 pb-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Quick Access
+                </p>
+              )}
+              <nav aria-label="Admin secondary navigation" className="space-y-1">
+                {NAV_ADMIN_SECONDARY.map((item) => (
+                  <NavLinkItem
+                    key={item.href}
+                    item={item}
+                    collapsed={collapsed}
+                    onNavigate={onNavigate}
+                    activeTab={activeTab}
+                    onSelectTab={onSelectTab}
+                  />
+                ))}
+              </nav>
+            </div>
+          </>
+        ) : (
+          /* =================== USER SIDEBAR ITEMS =================== */
+          <>
+            {/* Section 1: Main User Workspace */}
+            <div className="mt-3 px-3">
+              {!collapsed && (
+                <p className="px-2 pb-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Workspace
+                </p>
+              )}
+              <nav aria-label="Main navigation" className="space-y-1">
+                {NAV_USER_MAIN.map((item) => (
+                  <NavLinkItem
+                    key={item.href}
+                    item={item}
+                    collapsed={collapsed}
+                    onNavigate={onNavigate}
+                    activeTab={activeTab}
+                    onSelectTab={onSelectTab}
+                  />
+                ))}
+              </nav>
+            </div>
+
+            {/* Section 2: Safety & Community */}
+            <div className="mt-4 px-3">
+              {!collapsed && (
+                <p className="px-2 pb-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Trust & Safety
+                </p>
+              )}
+              <nav aria-label="Community navigation" className="space-y-1">
+                {NAV_USER_COMMUNITY.map((item) => (
+                  <NavLinkItem
+                    key={item.href}
+                    item={item}
+                    collapsed={collapsed}
+                    onNavigate={onNavigate}
+                    activeTab={activeTab}
+                    onSelectTab={onSelectTab}
+                  />
+                ))}
+              </nav>
+            </div>
+
+            {/* Section 3: Account & System */}
+            <div className="mt-4 px-3">
+              {!collapsed && (
+                <p className="px-2 pb-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Account
+                </p>
+              )}
+              <nav aria-label="System navigation" className="space-y-1">
+                {NAV_USER_SECONDARY.map((item) => (
+                  <NavLinkItem
+                    key={item.href}
+                    item={item}
+                    collapsed={collapsed}
+                    onNavigate={onNavigate}
+                    activeTab={activeTab}
+                    onSelectTab={onSelectTab}
+                  />
+                ))}
+
+                {/* If user is an admin viewing user dashboard, show one-click jump to Admin panel */}
+                {isAdmin && (
+                  <NavLinkItem
+                    item={{
+                      id: "admin-jump",
+                      icon: ShieldCheck,
+                      label: "Admin Control Center",
+                      href: "/admin",
+                      badge: "Admin",
+                    }}
+                    collapsed={collapsed}
+                    onNavigate={onNavigate}
+                    activeTab={activeTab}
+                    onSelectTab={onSelectTab}
+                  />
+                )}
+              </nav>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Bottom: Weekly Goal Card (Hidden when collapsed) */}
+      {/* Bottom Footer Card: Weekly Target for User, System Telemetry for Admin */}
       {!collapsed && (
         <div className="m-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#9ae600]/20 via-slate-900/40 to-slate-950 p-[1px] border border-[#9ae600]/30 shadow-md">
           <div className="rounded-[15px] bg-white/95 dark:bg-[#070b04]/95 p-3.5 backdrop-blur">
-            <div className="flex items-center justify-between text-[11.5px] font-bold text-slate-900 dark:text-white">
-              <span className="flex items-center gap-1.5">
-                <Sparkles size={14} className="text-[#72a800] dark:text-[#9ae600]" />
-                Weekly Target
-              </span>
-              <span className="text-[10px] font-mono font-bold text-[#72a800] dark:text-[#9ae600]">
-                82% Reunited
-              </span>
-            </div>
-            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-              41 of 50 lost items safely reunited.
-            </p>
-            <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
-              <div
-                className="h-full rounded-full bg-[#9ae600] shadow-[0_0_8px_#9ae600]"
-                style={{ width: "82%" }}
-              />
-            </div>
+            {isAdminView ? (
+              <div>
+                <div className="flex items-center justify-between text-[11.5px] font-bold text-slate-900 dark:text-white">
+                  <span className="flex items-center gap-1.5">
+                    <Shield size={14} className="text-emerald-500" />
+                    Admin Guard Active
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    Live
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                  Role: <strong className="text-emerald-500 capitalize">{user?.role || "Admin"}</strong>. All admin controls active.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleToggleRole}
+                  className="mt-2.5 w-full flex items-center justify-center gap-1.5 py-1 px-2 rounded-lg text-[10px] font-mono font-bold uppercase bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                  title="Switch role between Admin and User for quick testing"
+                >
+                  <ArrowRightLeft size={11} />
+                  <span>Toggle Role ({user?.role === "admin" ? "to User" : "to Admin"})</span>
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between text-[11.5px] font-bold text-slate-900 dark:text-white">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles size={14} className="text-[#72a800] dark:text-[#9ae600]" />
+                    Weekly Target
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-[#72a800] dark:text-[#9ae600]">
+                    82% Reunited
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                  41 of 50 lost items safely reunited.
+                </p>
+                <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-[#9ae600] shadow-[0_0_8px_#9ae600]"
+                    style={{ width: "82%" }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleRole}
+                  className="mt-2.5 w-full flex items-center justify-center gap-1.5 py-1 px-2 rounded-lg text-[10px] font-mono font-bold uppercase bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                  title="Switch role between User and Admin for quick testing"
+                >
+                  <ArrowRightLeft size={11} />
+                  <span>Switch to Admin Mode</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -318,7 +501,7 @@ export default function Sidebar({
               <button
                 type="button"
                 onClick={onClose}
-                className="absolute right-3.5 top-4 grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                className="absolute right-3.5 top-4 grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
                 aria-label="Close menu"
               >
                 <X size={16} />

@@ -255,7 +255,12 @@ export function getAllUnifiedReports() {
     .map((r) => {
       const id = r.id || r._id;
       if (statusMap[id]) {
-        return { ...r, status: statusMap[id] };
+        const mappedStatus = statusMap[id];
+        return {
+          ...r,
+          status: mappedStatus,
+          type: mappedStatus === "resolved" ? (r.type || "lost") : mappedStatus,
+        };
       }
       return r;
     });
@@ -420,6 +425,25 @@ export async function updateReportStatus(id, newStatus) {
     const statusMap = getStoredStatusMap();
     statusMap[id] = newStatus;
     localStorage.setItem(STORAGE_KEY_STATUS_MAP, JSON.stringify(statusMap));
+
+    // Also update custom reports if found there
+    const custom = getStoredCustomReports();
+    let modified = false;
+    const updatedCustom = custom.map((r) => {
+      const rId = String(r.id || r._id);
+      if (rId === String(id)) {
+        modified = true;
+        return {
+          ...r,
+          status: newStatus,
+          type: newStatus === "resolved" ? (r.type || "lost") : newStatus,
+        };
+      }
+      return r;
+    });
+    if (modified) {
+      localStorage.setItem(STORAGE_KEY_CUSTOM_REPORTS, JSON.stringify(updatedCustom));
+    }
   }
 
   return { success: true, id, status: newStatus };

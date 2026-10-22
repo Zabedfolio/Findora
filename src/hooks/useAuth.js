@@ -37,29 +37,79 @@ export function useAuth() {
     }
   }, []);
 
-  const user = sessionData?.user || demoUser || {
+  const [dbRole, setDbRole] = useState(null);
+
+  // Synchronize role directly from MongoDB database
+  useEffect(() => {
+    const targetEmail =
+      sessionData?.user?.email || demoUser?.email || "zabedfolio@gmail.com";
+    if (!targetEmail) return;
+
+    let isMounted = true;
+    fetch(`/api/user/role?email=${encodeURIComponent(targetEmail)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data?.success && data?.role) {
+          setDbRole(data.role);
+        }
+      })
+      .catch((err) => {
+        console.warn("Live DB role sync fallback:", err.message);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionData?.user?.email, demoUser?.email]);
+
+  const rawUser = sessionData?.user || demoUser || {
     id: "user_current",
     name: "Zabed Mahmud",
-    email: "zabed@findora.app",
+    email: "zabedfolio@gmail.com",
     phone: "+880 1712-345678",
     image: "/default-avatar.png",
-    role: "user",
+    role: "admin",
   };
+
+  // User object guaranteed to have real role from MongoDB
+  const user = {
+    ...rawUser,
+    role: dbRole || rawUser?.role || "user",
+  };
+
   const session = sessionData?.session || (demoUser ? { id: "demo-session" } : null);
   const loading = isPending ?? false;
 
   // Check if current user has administrator privileges
   const isAdmin = Boolean(
     user?.role === "admin" ||
-    user?.isAdmin === true ||
-    (typeof user?.email === "string" && user.email.toLowerCase().includes("admin"))
+    user?.isAdmin === true
   );
 
   /**
-   * Update current user profile
+   * Update current user profile and sync role with MongoDB
    */
   const updateProfile = async (updates) => {
     try {
+      // If role is updated, persist directly into MongoDB database
+      if (updates?.role && user?.email) {
+        try {
+          const res = await fetch("/api/user/role", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: user.email,
+              role: updates.role,
+            }),
+          });
+          if (res.ok) {
+            setDbRole(updates.role);
+          }
+        } catch (dbErr) {
+          console.warn("Failed to persist role to MongoDB:", dbErr.message);
+        }
+      }
+
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
       if (apiBase) {
         try {

@@ -97,20 +97,35 @@ export function bucketize(items, range) {
     for (let i = 0; i < edges.length - 1; i++) { if (it.timestamp < edges[i + 1]) { bi = i; break; } }
     if (it.timestamp >= edges[edges.length - 1]) bi = edges.length - 1;
     const b = buckets[bi]; b.total++; if (it.type === "lost") b.lost++; else b.found++;
-    if (it.status === "returned") b.returned++;
-    if (it.status === "returned" || it.status === "matched") { b.resolved++; b.avgHours += it.hoursToResolve; }
+    if (it.status === "returned" || it.status === "resolved") b.returned++;
+    if (it.status === "returned" || it.status === "matched" || it.status === "resolved") {
+      b.resolved++;
+      b.avgHours += Number(it.hoursToResolve) || 24;
+    }
   }
   for (const b of buckets) { if (b.resolved > 0) b.avgHours = b.avgHours / b.resolved; }
   return buckets;
 }
-export function computeKpis(items) {
+export function computeKpis(items = []) {
   let returned = 0, resolved = 0, hours = 0;
   for (const it of items) {
-    if (it.status === "returned") returned++;
-    if (it.status === "returned" || it.status === "matched") { resolved++; hours += it.hoursToResolve; }
+    const isReturned = it.status === "returned" || it.status === "resolved";
+    const isMatched = it.status === "matched";
+    if (isReturned) returned++;
+    if (isReturned || isMatched) {
+      resolved++;
+      hours += Number(it.hoursToResolve) || 24;
+    }
   }
   const total = items.length;
-  return { totalReports: total, matchRate: total ? (resolved / total) * 100 : 0, returned, avgRecovery: resolved ? hours / resolved : 0 };
+  return {
+    totalReports: total,
+    matchRate: total ? (resolved / total) * 100 : 0,
+    returned,
+    totalResolved: returned || resolved,
+    resolved,
+    avgRecovery: resolved ? hours / resolved : 0,
+  };
 }
 export function aggregateByCategory(items) {
   const map = new Map();

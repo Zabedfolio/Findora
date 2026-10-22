@@ -35,6 +35,9 @@ export default function Topbar({
   collapsed = false,
   onToggleCollapse,
   onOpenProfile,
+  title = "User Dashboard",
+  section = "Workspace",
+  badge = "ACTIVE",
 }) {
   const { user } = useAuth();
   const today = new Date().toLocaleDateString("en-US", {
@@ -75,14 +78,14 @@ export default function Topbar({
           <div className="flex items-center gap-2 text-[10.5px] font-mono font-bold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
             <span>Findora</span>
             <span className="text-slate-300 dark:text-slate-600">/</span>
-            <span className="text-[#72a800] dark:text-[#9ae600]">Workspace</span>
+            <span className="text-[#72a800] dark:text-[#9ae600]">{section}</span>
           </div>
           <div className="mt-0.5 flex items-center gap-2.5">
             <h1 className="font-display truncate text-lg font-bold tracking-tight text-slate-900 sm:text-xl dark:text-white">
-              User Dashboard
+              {title}
             </h1>
             <span className="hidden items-center rounded-full bg-[#9ae600]/15 px-2.5 py-0.5 text-[10px] font-mono font-bold text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30 sm:flex">
-              ACTIVE
+              {badge}
             </span>
           </div>
         </div>

@@ -104,7 +104,11 @@ export default function MyReportsPage() {
         prev.map((r) => {
           const reportId = String(r.id || r._id);
           if (reportId === String(id)) {
-            return { ...r, status: newStatus };
+            return {
+              ...r,
+              status: newStatus,
+              type: newStatus === "resolved" ? (r.type || "lost") : newStatus,
+            };
           }
           return r;
         })
@@ -492,8 +496,10 @@ export default function MyReportsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredReports.map((report) => {
                 const id = String(report.id || report._id);
-                const isLost = report.type === "lost";
-                const isResolved = report.status === "resolved";
+                const currentStatus = (report.status || report.type || "lost").toLowerCase();
+                const isLost = currentStatus === "lost";
+                const isFound = currentStatus === "found";
+                const isResolved = currentStatus === "resolved";
 
                 return (
                   <div
@@ -518,13 +524,15 @@ export default function MyReportsPage() {
                         <div className="absolute top-3 left-3 flex items-center gap-2">
                           <span
                             className={cn(
-                              "px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider backdrop-blur-md shadow-xs",
-                              isLost
+                              "px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider backdrop-blur-md shadow-xs transition-colors duration-200",
+                              isResolved
+                                ? "bg-emerald-500/90 text-white"
+                                : isLost
                                 ? "bg-rose-500/90 text-white"
                                 : "bg-[#9ae600]/90 text-slate-950"
                             )}
                           >
-                            {report.type}
+                            {currentStatus}
                           </span>
                         </div>
 
@@ -583,7 +591,7 @@ export default function MyReportsPage() {
                             Status Quick-Action:
                           </span>
                           <span className="text-[10px] font-mono text-slate-500 capitalize">
-                            Current: {report.status || report.type}
+                            Current: {currentStatus}
                           </span>
                         </div>
 
@@ -591,48 +599,48 @@ export default function MyReportsPage() {
                           {/* Lost Button */}
                           <button
                             type="button"
-                            onClick={() => handleStatusChange(id, "lost", report.status)}
+                            onClick={() => handleStatusChange(id, "lost", currentStatus)}
                             className={cn(
                               "px-2 py-1 rounded-lg text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer",
-                              report.status === "lost"
+                              isLost
                                 ? "bg-rose-500 text-white shadow-xs"
                                 : "bg-white dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-rose-500/10 hover:text-rose-600"
                             )}
                             title="Mark as Lost"
                           >
-                            {report.status === "lost" && <Check size={10} />}
+                            {isLost && <Check size={10} />}
                             <span>Lost</span>
                           </button>
 
                           {/* Found Button */}
                           <button
                             type="button"
-                            onClick={() => handleStatusChange(id, "found", report.status)}
+                            onClick={() => handleStatusChange(id, "found", currentStatus)}
                             className={cn(
                               "px-2 py-1 rounded-lg text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer",
-                              report.status === "found"
+                              isFound
                                 ? "bg-[#9ae600] text-slate-950 shadow-xs"
                                 : "bg-white dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-[#9ae600]/10 hover:text-[#72a800]"
                             )}
                             title="Mark as Found"
                           >
-                            {report.status === "found" && <Check size={10} />}
+                            {isFound && <Check size={10} />}
                             <span>Found</span>
                           </button>
 
                           {/* Resolved Button */}
                           <button
                             type="button"
-                            onClick={() => handleStatusChange(id, "resolved", report.status)}
+                            onClick={() => handleStatusChange(id, "resolved", currentStatus)}
                             className={cn(
                               "px-2 py-1 rounded-lg text-[10px] font-mono font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer",
-                              report.status === "resolved"
+                              isResolved
                                 ? "bg-emerald-500 text-white shadow-xs"
                                 : "bg-white dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-600"
                             )}
                             title="Mark as Resolved"
                           >
-                            {report.status === "resolved" && <Check size={10} />}
+                            {isResolved && <Check size={10} />}
                             <span>Resolved</span>
                           </button>
                         </div>
@@ -693,8 +701,10 @@ export default function MyReportsPage() {
                   <tbody className="divide-y divide-slate-100 dark:divide-white/[0.05]">
                     {filteredReports.map((report) => {
                       const id = String(report.id || report._id);
-                      const isLost = report.type === "lost";
-                      const isResolved = report.status === "resolved";
+                      const currentStatus = (report.status || report.type || "lost").toLowerCase();
+                      const isLost = currentStatus === "lost";
+                      const isFound = currentStatus === "found";
+                      const isResolved = currentStatus === "resolved";
 
                       return (
                         <tr
@@ -723,13 +733,15 @@ export default function MyReportsPage() {
                                 </p>
                                 <span
                                   className={cn(
-                                    "inline-block mt-0.5 px-2 py-0.2 rounded-full text-[9px] font-mono font-bold uppercase",
-                                    isLost
+                                    "inline-block mt-0.5 px-2 py-0.2 rounded-full text-[9px] font-mono font-bold uppercase transition-colors duration-200",
+                                    isResolved
+                                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                                      : isLost
                                       ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
                                       : "bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600]"
                                   )}
                                 >
-                                  {report.type}
+                                  {currentStatus}
                                 </span>
                               </div>
                             </div>
@@ -759,10 +771,10 @@ export default function MyReportsPage() {
                               {/* Lost */}
                               <button
                                 type="button"
-                                onClick={() => handleStatusChange(id, "lost", report.status)}
+                                onClick={() => handleStatusChange(id, "lost", currentStatus)}
                                 className={cn(
                                   "px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase transition-all cursor-pointer",
-                                  report.status === "lost"
+                                  isLost
                                     ? "bg-rose-500 text-white shadow-xs"
                                     : "text-slate-500 hover:text-rose-500"
                                 )}
@@ -774,10 +786,10 @@ export default function MyReportsPage() {
                               {/* Found */}
                               <button
                                 type="button"
-                                onClick={() => handleStatusChange(id, "found", report.status)}
+                                onClick={() => handleStatusChange(id, "found", currentStatus)}
                                 className={cn(
                                   "px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase transition-all cursor-pointer",
-                                  report.status === "found"
+                                  isFound
                                     ? "bg-[#9ae600] text-slate-950 shadow-xs"
                                     : "text-slate-500 hover:text-[#72a800]"
                                 )}
@@ -789,10 +801,10 @@ export default function MyReportsPage() {
                               {/* Resolved */}
                               <button
                                 type="button"
-                                onClick={() => handleStatusChange(id, "resolved", report.status)}
+                                onClick={() => handleStatusChange(id, "resolved", currentStatus)}
                                 className={cn(
                                   "px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase transition-all cursor-pointer",
-                                  report.status === "resolved"
+                                  isResolved
                                     ? "bg-emerald-500 text-white shadow-xs"
                                     : "text-slate-500 hover:text-emerald-500"
                                 )}

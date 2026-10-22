@@ -82,12 +82,16 @@ export default function MyReportsTable() {
   const handleStatusChange = async (id, newStatus, currentStatus) => {
     if (newStatus === currentStatus) return;
 
-    // Optimistic UI update
+    // Optimistic UI update: sync both status and type so column 1 updates instantly
     setReports((prev) =>
       prev.map((r) => {
         const rId = String(r.id || r._id);
         if (rId === String(id)) {
-          return { ...r, status: newStatus };
+          return {
+            ...r,
+            status: newStatus,
+            type: newStatus === "resolved" ? (r.type || "lost") : newStatus,
+          };
         }
         return r;
       })
@@ -153,9 +157,10 @@ export default function MyReportsTable() {
   const statusCounts = useMemo(() => {
     const counts = { all: searched.length, lost: 0, found: 0, resolved: 0 };
     for (const it of searched) {
-      if (it.status === "resolved") {
+      const cur = it.status || it.type;
+      if (cur === "resolved") {
         counts.resolved++;
-      } else if (it.type === "found") {
+      } else if (cur === "found") {
         counts.found++;
       } else {
         counts.lost++;
@@ -168,13 +173,13 @@ export default function MyReportsTable() {
   const filtered = useMemo(() => {
     if (status === "all") return searched;
     if (status === "resolved") {
-      return searched.filter((it) => it.status === "resolved");
+      return searched.filter((it) => (it.status || it.type) === "resolved");
     }
     if (status === "lost") {
-      return searched.filter((it) => it.type === "lost" && it.status !== "resolved");
+      return searched.filter((it) => (it.status || it.type) === "lost");
     }
     if (status === "found") {
-      return searched.filter((it) => it.type === "found" && it.status !== "resolved");
+      return searched.filter((it) => (it.status || it.type) === "found");
     }
     return searched;
   }, [searched, status]);
@@ -298,8 +303,10 @@ export default function MyReportsTable() {
             <AnimatePresence mode="popLayout">
               {pageItems.map((it, i) => {
                 const id = String(it.id || it._id);
-                const isLost = it.type === "lost";
-                const isResolved = it.status === "resolved";
+                const currentStatus = (it.status || it.type || "lost").toLowerCase();
+                const isResolved = currentStatus === "resolved";
+                const isLost = currentStatus === "lost";
+                const isFound = currentStatus === "found";
 
                 return (
                   <motion.tr
@@ -338,23 +345,29 @@ export default function MyReportsTable() {
                       </div>
                     </td>
 
-                    {/* Type Badge */}
+                    {/* Type Badge (Automatically updates when Quick Status changes) */}
                     <td className="border-b border-slate-50 px-4 py-3 dark:border-white/[0.04]">
                       <span
                         className={cn(
-                          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-mono font-bold uppercase",
-                          isLost
+                          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-mono font-bold uppercase transition-colors duration-200",
+                          isResolved
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            : isLost
                             ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
                             : "bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600]"
                         )}
                       >
                         <span
                           className={cn(
-                            "h-1.5 w-1.5 rounded-full",
-                            isLost ? "bg-rose-500" : "bg-[#9ae600]"
+                            "h-1.5 w-1.5 rounded-full transition-colors duration-200",
+                            isResolved
+                              ? "bg-emerald-500"
+                              : isLost
+                              ? "bg-rose-500"
+                              : "bg-[#9ae600]"
                           )}
                         />
-                        {it.type}
+                        {currentStatus}
                       </span>
                     </td>
 
@@ -379,10 +392,10 @@ export default function MyReportsTable() {
                         {/* Lost */}
                         <button
                           type="button"
-                          onClick={() => handleStatusChange(id, "lost", it.status)}
+                          onClick={() => handleStatusChange(id, "lost", currentStatus)}
                           className={cn(
                             "px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase transition-all cursor-pointer",
-                            it.status === "lost"
+                            isLost
                               ? "bg-rose-500 text-white shadow-xs"
                               : "text-slate-500 hover:text-rose-500"
                           )}
@@ -394,10 +407,10 @@ export default function MyReportsTable() {
                         {/* Found */}
                         <button
                           type="button"
-                          onClick={() => handleStatusChange(id, "found", it.status)}
+                          onClick={() => handleStatusChange(id, "found", currentStatus)}
                           className={cn(
                             "px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase transition-all cursor-pointer",
-                            it.status === "found"
+                            isFound
                               ? "bg-[#9ae600] text-slate-950 shadow-xs"
                               : "text-slate-500 hover:text-[#72a800]"
                           )}
@@ -409,10 +422,10 @@ export default function MyReportsTable() {
                         {/* Resolved */}
                         <button
                           type="button"
-                          onClick={() => handleStatusChange(id, "resolved", it.status)}
+                          onClick={() => handleStatusChange(id, "resolved", currentStatus)}
                           className={cn(
                             "px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase transition-all cursor-pointer",
-                            it.status === "resolved"
+                            isResolved
                               ? "bg-emerald-500 text-white shadow-xs"
                               : "text-slate-500 hover:text-emerald-500"
                           )}
