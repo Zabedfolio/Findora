@@ -37,7 +37,6 @@ export default function Navbar() {
   const navLinks = [
     { href: "/reports", label: t("nav.browse") },
     { href: "/match-radar", label: t("nav.matchRadar", "Match Radar"), isRadar: true },
-    { href: "/#how-it-works", label: t("nav.howItWorks") },
     { href: "/trust", label: t("nav.trust") },
   ];
 
@@ -72,7 +71,7 @@ export default function Navbar() {
             {/* Desktop Navigation Links */}
             <nav className="hidden md:flex items-center gap-6 lg:gap-7 text-sm font-medium text-slate-500">
               {navLinks.map((link) => {
-                const isActive = pathname === link.href || (link.href !== "/#how-it-works" && pathname.startsWith(link.href + "/"));
+                const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
                 return (
                   <Link
                     key={link.href}
