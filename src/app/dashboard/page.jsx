@@ -33,11 +33,9 @@ import KpiCard from "@/components/dashboard/KpiCard";
 import { Card, CardHeader } from "@/components/dashboard/ui";
 import AreaChart from "@/components/dashboard/AreaChart";
 import DonutChart from "@/components/dashboard/DonutChart";
-import DataTable from "@/components/dashboard/DataTable";
 import MyReportsTable from "@/components/dashboard/MyReportsTable";
 import LocationList from "@/components/dashboard/LocationList";
 import CategoryBars from "@/components/dashboard/BarChart";
-import MyListingsView from "@/components/dashboard/MyListingsView";
 import ProfileView from "@/components/dashboard/ProfileView";
 import ClaimsView from "@/components/dashboard/ClaimsView";
 
@@ -45,18 +43,11 @@ const delta = (cur, prev) => (prev > 0 ? ((cur - prev) / prev) * 100 : 0);
 
 const QUICK_WORKSPACES = [
   {
-    icon: ClipboardList,
-    title: "Reports Directory",
-    description: "Browse, filter, and review published lost and found community listings.",
-    tabKey: "reports",
-    action: "View in Dashboard",
-  },
-  {
     icon: FileText,
-    title: "My Listings Hub",
-    description: "Manage, track, and update your submitted lost and found reports as cards or a table.",
-    tabKey: "my-listings",
-    action: "Open My Listings",
+    title: "My Reports Hub",
+    description: "Manage, track, and update your submitted lost and found reports with quick status actions.",
+    tabKey: "reports",
+    action: "View My Reports",
   },
   {
     icon: Handshake,
@@ -64,6 +55,13 @@ const QUICK_WORKSPACES = [
     description: "Review ownership claims, verify item proof answers, and track safe handovers.",
     tabKey: "claims",
     action: "View Claims Hub",
+  },
+  {
+    icon: ClipboardList,
+    title: "Public Directory",
+    description: "Browse the community directory of all active lost and found items.",
+    href: "/reports",
+    action: "Browse Listings",
   },
 ];
 
@@ -77,21 +75,28 @@ function DashboardContent() {
 
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState(tabParam || "overview");
+  const resolveTab = (param) => {
+    if (!param) return "overview";
+    if (param === "my-listings" || param === "my-reports") return "reports";
+    return param;
+  };
+  const [activeTab, setActiveTab] = useState(resolveTab(tabParam));
 
   useEffect(() => {
-    if (tabParam && tabParam !== activeTab) {
-      setActiveTab(tabParam);
+    const target = resolveTab(tabParam);
+    if (target !== activeTab) {
+      setActiveTab(target);
     }
   }, [tabParam]);
 
   const handleSelectTab = (tabId) => {
-    setActiveTab(tabId);
+    const resolved = resolveTab(tabId);
+    setActiveTab(resolved);
     const url = new URL(window.location.href);
-    if (tabId === "overview") {
+    if (resolved === "overview") {
       url.searchParams.delete("tab");
     } else {
-      url.searchParams.set("tab", tabId);
+      url.searchParams.set("tab", resolved);
     }
     window.history.pushState({}, "", url.toString());
   };
@@ -193,10 +198,7 @@ function DashboardContent() {
           {/* TAB 2: CLAIMS & VERIFICATION (In-Dashboard View) */}
           {activeTab === "claims" && <ClaimsView />}
 
-          {/* TAB 3: MY LISTINGS (Table & Card View inside Dashboard) */}
-          {activeTab === "my-listings" && <MyListingsView />}
-
-          {/* TAB 4: ORIGINAL OVERVIEW & ANALYTICS VIEW */}
+          {/* TAB 3: ORIGINAL OVERVIEW & ANALYTICS VIEW */}
           {activeTab === "overview" && (
             <>
               {/* Filter Bar with Time range, Segments, and Location */}
@@ -376,8 +378,8 @@ function DashboardContent() {
             </>
           )}
 
-          {/* TAB 5: REPORTS DIRECTORY VIEW */}
-          {activeTab === "reports" && (
+          {/* TAB 4: MY REPORTS VIEW */}
+          {(activeTab === "reports" || activeTab === "my-reports" || activeTab === "my-listings") && (
             <div className="mt-2 space-y-5">
               <FilterBar
                 range={range}
@@ -393,7 +395,7 @@ function DashboardContent() {
 
               <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
                 <Card className="xl:col-span-8 overflow-hidden">
-                  <DataTable items={items} />
+                  <MyReportsTable />
                 </Card>
 
                 <Card className="xl:col-span-4 overflow-hidden">

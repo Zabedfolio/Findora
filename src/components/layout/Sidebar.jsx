@@ -21,9 +21,8 @@ import { cn } from "../../utils/cn";
 
 const NAV_MAIN = [
   { id: "overview", tabKey: "overview", icon: LayoutDashboard, label: "Overview & Analytics", href: "/dashboard" },
-  { id: "my-listings", tabKey: "my-listings", icon: FileText, label: "My Listings", href: "/dashboard?tab=my-listings" },
+  { id: "reports", tabKey: "reports", icon: FileText, label: "My Reports", href: "/dashboard?tab=reports" },
   { id: "claims", tabKey: "claims", icon: Handshake, label: "Claims & Verification", href: "/dashboard?tab=claims" },
-  { id: "reports", tabKey: "reports", icon: PackageSearch, label: "Reports Directory", href: "/dashboard?tab=reports" },
 ];
 
 const NAV_COMMUNITY = [
@@ -45,7 +44,11 @@ function NavLinkItem({ item, collapsed, onNavigate, activeTab, onSelectTab }) {
   let isActive = false;
   if (pathname === "/dashboard") {
     if (item.tabKey) {
-      isActive = currentTab === item.tabKey;
+      if (item.tabKey === "reports") {
+        isActive = currentTab === "reports" || currentTab === "my-reports" || currentTab === "my-listings";
+      } else {
+        isActive = currentTab === item.tabKey;
+      }
     } else {
       isActive = item.href === "/dashboard" && currentTab === "overview";
     }
