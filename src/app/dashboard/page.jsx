@@ -34,6 +34,7 @@ import { Card, CardHeader } from "@/components/dashboard/ui";
 import AreaChart from "@/components/dashboard/AreaChart";
 import DonutChart from "@/components/dashboard/DonutChart";
 import DataTable from "@/components/dashboard/DataTable";
+import MyReportsTable from "@/components/dashboard/MyReportsTable";
 import LocationList from "@/components/dashboard/LocationList";
 import CategoryBars from "@/components/dashboard/BarChart";
 import MyListingsView from "@/components/dashboard/MyListingsView";
@@ -342,7 +343,7 @@ function DashboardContent() {
               {/* Data Table & Categories Section */}
               <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
                 <Card delay={0.38} className="xl:col-span-7 overflow-hidden">
-                  <DataTable items={items} />
+                  <MyReportsTable />
                 </Card>
 
                 <Card delay={0.44} className="xl:col-span-5 overflow-hidden">
