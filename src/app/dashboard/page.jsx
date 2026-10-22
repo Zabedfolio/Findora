@@ -11,13 +11,10 @@ import {
   Search,
   Timer,
   FileText,
-  LayoutDashboard,
   Handshake,
-  User,
 } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
-import useAuth from "@/hooks/useAuth";
 
 import {
   ALL_ITEMS,
@@ -42,8 +39,6 @@ import CategoryBars from "@/components/dashboard/BarChart";
 import MyListingsView from "@/components/dashboard/MyListingsView";
 import ProfileView from "@/components/dashboard/ProfileView";
 import ClaimsView from "@/components/dashboard/ClaimsView";
-import { getAllUnifiedReports } from "@/services/reportService";
-import { cn } from "@/utils/cn";
 
 const delta = (cur, prev) => (prev > 0 ? ((cur - prev) / prev) * 100 : 0);
 
@@ -72,8 +67,6 @@ const QUICK_WORKSPACES = [
 ];
 
 function DashboardContent() {
-  const { user } = useAuth();
-
   const [light, setLight] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -158,20 +151,6 @@ function DashboardContent() {
     recovery: buckets.map((b) => b.avgHours),
   };
 
-  // User-specific report items count for badge
-  const userItems = useMemo(() => {
-    const all = getAllUnifiedReports();
-    return all.filter(
-      (item) =>
-        item.isUserCreated ||
-        item.owner?._id === "user_current" ||
-        item.id === "lost-1" ||
-        item.id === "lost-3" ||
-        item.id === "found-1" ||
-        item.id === "found-2"
-    );
-  }, []);
-
   return (
     <div className="grain min-h-screen bg-slate-50/60 dark:bg-[#070905] text-slate-900 dark:text-white transition-colors">
       {/* Findora Theme Ambient Glowing Orbs */}
@@ -206,108 +185,6 @@ function DashboardContent() {
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
             onOpenProfile={() => handleSelectTab("profile")}
           />
-
-          {/* In-Dashboard View Switcher Bar */}
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3 dark:border-white/[0.08]">
-            <div className="inline-flex flex-wrap rounded-2xl bg-slate-100 dark:bg-white/[0.05] p-1 border border-slate-200/80 dark:border-white/10 gap-1">
-              <button
-                type="button"
-                onClick={() => handleSelectTab("overview")}
-                className={cn(
-                  "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
-                  activeTab === "overview"
-                    ? "bg-white dark:bg-[#070b04] text-slate-950 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                )}
-              >
-                <LayoutDashboard
-                  size={14}
-                  className={activeTab === "overview" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
-                />
-                <span>Overview &amp; Analytics</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSelectTab("my-listings")}
-                className={cn(
-                  "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
-                  activeTab === "my-listings"
-                    ? "bg-white dark:bg-[#070b04] text-slate-950 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                )}
-              >
-                <FileText
-                  size={14}
-                  className={activeTab === "my-listings" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
-                />
-                <span>My Listings</span>
-                <span className="rounded-full bg-[#9ae600]/20 text-[#629400] dark:text-[#9ae600] px-1.5 py-0.2 text-[10px] font-mono font-bold">
-                  {userItems.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSelectTab("claims")}
-                className={cn(
-                  "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
-                  activeTab === "claims"
-                    ? "bg-white dark:bg-[#070b04] text-slate-950 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                )}
-              >
-                <Handshake
-                  size={14}
-                  className={activeTab === "claims" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
-                />
-                <span>Claims &amp; Verification</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSelectTab("reports")}
-                className={cn(
-                  "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
-                  activeTab === "reports"
-                    ? "bg-white dark:bg-[#070b04] text-slate-950 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                )}
-              >
-                <PackageSearch
-                  size={14}
-                  className={activeTab === "reports" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
-                />
-                <span>Browse Directory</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSelectTab("profile")}
-                className={cn(
-                  "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
-                  activeTab === "profile"
-                    ? "bg-white dark:bg-[#070b04] text-slate-950 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                )}
-              >
-                <User
-                  size={14}
-                  className={activeTab === "profile" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
-                />
-                <span>Profile &amp; Settings</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500">
-                Workspace:
-              </span>
-              <span className="rounded-full bg-[#9ae600]/15 px-2.5 py-0.5 text-[10.5px] font-mono font-bold uppercase tracking-wider text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30">
-                Active Member
-              </span>
-            </div>
-          </div>
 
           {/* TAB 1: PROFILE & SETTINGS (In-Dashboard View) */}
           {activeTab === "profile" && <ProfileView />}
