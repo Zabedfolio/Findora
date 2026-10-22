@@ -15,9 +15,18 @@ import {
   LayoutDashboard,
   Handshake,
   User,
+  PlusCircle,
+  MapPin,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Sparkles,
+  AlertCircle,
+  Eye,
 } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
+import useAuth from "@/hooks/useAuth";
 
 import {
   ALL_ITEMS,
@@ -34,23 +43,22 @@ import { fmtInt, fmtHours } from "@/lib/format";
 import FilterBar from "@/components/dashboard/FilterBar";
 import KpiCard from "@/components/dashboard/KpiCard";
 import { Card, CardHeader } from "@/components/dashboard/ui";
-import AreaChart from "@/components/dashboard/AreaChart";
-import DonutChart from "@/components/dashboard/DonutChart";
 import DataTable from "@/components/dashboard/DataTable";
 import LocationList from "@/components/dashboard/LocationList";
 import CategoryBars from "@/components/dashboard/BarChart";
 import MyListingsView from "@/components/dashboard/MyListingsView";
 import ProfileView from "@/components/dashboard/ProfileView";
 import ClaimsView from "@/components/dashboard/ClaimsView";
+import { getAllUnifiedReports } from "@/services/reportService";
 import { cn } from "@/utils/cn";
 
 const delta = (cur, prev) => (prev > 0 ? ((cur - prev) / prev) * 100 : 0);
 
-const ADMIN_TOOLS = [
+const USER_QUICK_TOOLS = [
   {
     icon: FileText,
     title: "My Listings Hub",
-    description: "Manage, track, and update your submitted lost and found reports as cards or a table.",
+    description: "Manage, track, and update your submitted lost and found reports as a table or cards.",
     tabKey: "my-listings",
     action: "Open My Listings",
   },
@@ -66,11 +74,42 @@ const ADMIN_TOOLS = [
     title: "Profile & Settings",
     description: "Update personal contact details, credentials, notification alerts, and trust badges.",
     tabKey: "profile",
-    action: "Open Profile",
+    action: "Manage Profile",
+  },
+];
+
+// Demo recent user activity timeline
+const USER_ACTIVITY_LOG = [
+  {
+    id: "act-1",
+    title: "Ownership claim approved",
+    subtitle: "Tanvir Rahman approved your claim on iPhone 15 Pro",
+    time: "2 hours ago",
+    status: "approved",
+    actionLabel: "View Handover Details",
+  },
+  {
+    id: "act-2",
+    title: "New claim submitted on your found item",
+    subtitle: "Kamrul Islam submitted proof for Toyota Smart Key",
+    time: "4 hours ago",
+    status: "pending",
+    actionLabel: "Review Proof Answer",
+  },
+  {
+    id: "act-3",
+    title: "Report published",
+    subtitle: "Your report for North Face Backpack is live on Findora",
+    time: "Yesterday",
+    status: "info",
+    actionLabel: "View Report",
   },
 ];
 
 function DashboardContent() {
+  const { user } = useAuth();
+  const userName = user?.name || "Zabed Mahmud";
+
   const [light, setLight] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -118,27 +157,7 @@ function DashboardContent() {
     [windowStart, segment, location]
   );
 
-  const prevItems = useMemo(
-    () =>
-      ALL_ITEMS.filter(
-        (it) =>
-          it.timestamp >= windowStart - days * DAY &&
-          it.timestamp < windowStart &&
-          (segment === "all" || it.type === segment) &&
-          (location === "all" || it.location === location)
-      ),
-    [windowStart, days, segment, location]
-  );
-
-  const buckets = useMemo(() => bucketize(items, range), [items, range]);
-  const kpis = useMemo(() => computeKpis(items), [items]);
-  const prevKpis = useMemo(() => computeKpis(prevItems), [prevItems]);
-  const lostReports = useMemo(() => items.filter((it) => it.type === "lost").length, [items]);
-  const foundReports = useMemo(() => items.filter((it) => it.type === "found").length, [items]);
-  const prevLostReports = useMemo(() => prevItems.filter((it) => it.type === "lost").length, [prevItems]);
-  const prevFoundReports = useMemo(() => prevItems.filter((it) => it.type === "found").length, [prevItems]);
   const catAgg = useMemo(() => aggregateByCategory(items), [items]);
-  const statusAgg = useMemo(() => aggregateByStatus(items), [items]);
   const locs = useMemo(() => topLocations(items), [items]);
 
   const isDefault = range === "12m" && segment === "all" && location === "all";
@@ -148,12 +167,31 @@ function DashboardContent() {
     setLocation("all");
   };
 
-  const sparks = {
-    lost: buckets.map((b) => b.lost),
-    found: buckets.map((b) => b.found),
-    returned: buckets.map((b) => b.returned),
-    recovery: buckets.map((b) => b.avgHours),
-  };
+  // User-specific report items
+  const userItems = useMemo(() => {
+    const all = getAllUnifiedReports();
+    return all.filter(
+      (item) =>
+        item.isUserCreated ||
+        item.owner?._id === "user_current" ||
+        item.id === "lost-1" ||
+        item.id === "lost-3" ||
+        item.id === "found-1" ||
+        item.id === "found-2"
+    );
+  }, []);
+
+  const userStats = useMemo(() => {
+    const lostCount = userItems.filter((i) => i.type === "lost" && i.status !== "resolved").length;
+    const foundCount = userItems.filter((i) => i.type === "found" && i.status !== "resolved").length;
+    const reunitedCount = userItems.filter((i) => i.status === "resolved").length;
+    return {
+      lostCount,
+      foundCount,
+      activeClaims: 2,
+      reunitedCount,
+    };
+  }, [userItems]);
 
   return (
     <div className="grain min-h-screen bg-slate-50/60 dark:bg-[#070905] text-slate-900 dark:text-white transition-colors">
@@ -207,7 +245,7 @@ function DashboardContent() {
                   size={14}
                   className={activeTab === "overview" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
                 />
-                <span>Overview &amp; Analytics</span>
+                <span>Overview &amp; Activity</span>
               </button>
 
               <button
@@ -225,6 +263,9 @@ function DashboardContent() {
                   className={activeTab === "my-listings" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
                 />
                 <span>My Listings</span>
+                <span className="rounded-full bg-[#9ae600]/20 text-[#629400] dark:text-[#9ae600] px-1.5 py-0.2 text-[10px] font-mono font-bold">
+                  {userItems.length}
+                </span>
               </button>
 
               <button
@@ -258,7 +299,7 @@ function DashboardContent() {
                   size={14}
                   className={activeTab === "reports" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
                 />
-                <span>Reports Directory</span>
+                <span>Browse Directory</span>
               </button>
 
               <button
@@ -281,18 +322,10 @@ function DashboardContent() {
 
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500">
-                Dashboard Mode:
+                User Status:
               </span>
               <span className="rounded-full bg-[#9ae600]/15 px-2.5 py-0.5 text-[10.5px] font-mono font-bold uppercase tracking-wider text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30">
-                {activeTab === "profile"
-                  ? "Profile & Settings"
-                  : activeTab === "claims"
-                  ? "Claims & Verification"
-                  : activeTab === "my-listings"
-                  ? "My Listings"
-                  : activeTab === "reports"
-                  ? "Reports Directory"
-                  : "Overview & Analytics"}
+                Active Member
               </span>
             </div>
           </div>
@@ -312,172 +345,254 @@ function DashboardContent() {
             <MyListingsView />
           )}
 
-          {/* TAB 4: OVERVIEW VIEW */}
+          {/* TAB 4: USER OVERVIEW VIEW */}
           {activeTab === "overview" && (
-            <>
-              <FilterBar
-                range={range}
-                onRange={setRange}
-                segment={segment}
-                onSegment={setSegment}
-                location={location}
-                onLocation={setLocation}
-                windowStart={windowStart}
-                onReset={reset}
-                isDefault={isDefault}
-              />
+            <div className="space-y-6">
+              {/* User Welcome Card */}
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 text-white border border-slate-800 p-6 sm:p-8 shadow-xl">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-[#9ae600]/10 rounded-full blur-3xl pointer-events-none" />
 
-              {/* KPI Metrics Strip */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-5">
-                <KpiCard
-                  label="Lost items"
-                  value={lostReports}
-                  format={fmtInt}
-                  delta={delta(lostReports, prevLostReports)}
-                  icon={PackageSearch}
-                  iconClass="bg-rose-500/10 text-rose-500 dark:bg-rose-400/10 dark:text-rose-300"
-                  spark={sparks.lost}
-                  sparkColor="#FB7185"
-                  delay={0.02}
-                />
-
-                <KpiCard
-                  label="Found items"
-                  value={foundReports}
-                  format={fmtInt}
-                  delta={delta(foundReports, prevFoundReports)}
-                  icon={Search}
-                  iconClass="bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600]"
-                  spark={sparks.found}
-                  sparkColor="#9ae600"
-                  delay={0.08}
-                />
-
-                <KpiCard
-                  label="Successful returns"
-                  value={kpis.returned}
-                  format={fmtInt}
-                  delta={delta(kpis.returned, prevKpis.returned)}
-                  icon={PackageCheck}
-                  iconClass="bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600]"
-                  spark={sparks.returned}
-                  sparkColor="#9ae600"
-                  delay={0.14}
-                />
-
-                <KpiCard
-                  label="Avg. recovery time"
-                  value={kpis.avgRecovery}
-                  format={fmtHours}
-                  delta={delta(kpis.avgRecovery, prevKpis.avgRecovery)}
-                  invert
-                  icon={Timer}
-                  iconClass="bg-amber-500/10 text-amber-600 dark:bg-amber-400/10 dark:text-amber-300"
-                  spark={sparks.recovery}
-                  sparkColor="#FBBF24"
-                  delay={0.2}
-                />
-              </div>
-
-              {/* Quick Workspaces Section */}
-              <section className="mt-5" aria-labelledby="admin-tools-heading">
-                <div className="mb-3 flex items-end justify-between gap-3">
+                <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div>
-                    <h2
-                      id="admin-tools-heading"
-                      className="font-display text-base font-bold tracking-tight text-slate-900 dark:text-white"
-                    >
-                      Admin Workspace &amp; Navigation
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#9ae600]/15 border border-[#9ae600]/30 text-[#9ae600] text-xs font-mono font-bold mb-3">
+                      <Sparkles size={13} />
+                      <span>PERSONAL WORKSPACE</span>
+                    </div>
+
+                    <h2 className="text-2xl sm:text-3xl font-black font-heading tracking-tight">
+                      Welcome back, <span className="text-[#9ae600]">{userName}</span>
                     </h2>
-                    <p className="mt-0.5 text-[12px] text-slate-500 dark:text-slate-400">
-                      Quick access to community reports, personal listings, and claim verification.
+                    <p className="mt-1.5 text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
+                      Track the progress of your reported lost valuables, manage found items in your care, and review ownership claims in one secure place.
                     </p>
                   </div>
-                  <span className="rounded-full bg-[#9ae600]/15 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30">
-                    ACTIVE
-                  </span>
+
+                  {/* Quick User Report Actions */}
+                  <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <Link
+                      href="/reports/new"
+                      className="btn-primary-glow inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-950 shadow-md"
+                    >
+                      <PlusCircle size={15} />
+                      <span>Report New Item</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTab("my-listings")}
+                      className="px-4 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/10 text-xs font-bold transition-all cursor-pointer"
+                    >
+                      View My Listings
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* User KPI Metrics Strip */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-5 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">
+                  <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span>MY LOST ITEMS</span>
+                    <PackageSearch size={15} className="text-rose-500" />
+                  </div>
+                  <p className="mt-2 text-3xl font-black text-rose-500 font-heading">
+                    {userStats.lostCount}
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">Currently searching</p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  {ADMIN_TOOLS.map(({ icon: Icon, title, description, tabKey, action }) => (
-                    <Card
-                      key={title}
-                      className="flex items-start gap-3 p-4 hover:border-[#9ae600]/40 transition-colors"
-                    >
-                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600]">
-                        <Icon size={17} strokeWidth={2.1} />
+                <div className="p-5 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">
+                  <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span>ITEMS I FOUND</span>
+                    <Search size={15} className="text-[#72a800] dark:text-[#9ae600]" />
+                  </div>
+                  <p className="mt-2 text-3xl font-black text-[#72a800] dark:text-[#9ae600] font-heading">
+                    {userStats.foundCount}
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">In safe keeping</p>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">
+                  <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span>ACTIVE CLAIMS</span>
+                    <Handshake size={15} className="text-amber-500" />
+                  </div>
+                  <p className="mt-2 text-3xl font-black text-amber-500 font-heading">
+                    {userStats.activeClaims}
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">Proof under review</p>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">
+                  <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span>REUNITED ITEMS</span>
+                    <PackageCheck size={15} className="text-emerald-500" />
+                  </div>
+                  <p className="mt-2 text-3xl font-black text-emerald-500 font-heading">
+                    {userStats.reunitedCount}
+                  </p>
+                  <p className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                    100% verified returns
+                  </p>
+                </div>
+              </div>
+
+              {/* User Quick Workspaces Section */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {USER_QUICK_TOOLS.map(({ icon: Icon, title, description, tabKey, action }) => (
+                  <Card
+                    key={title}
+                    className="flex flex-col justify-between p-5 hover:border-[#9ae600]/40 transition-colors"
+                  >
+                    <div>
+                      <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600] mb-3">
+                        <Icon size={19} strokeWidth={2.2} />
                       </span>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white">
-                          {title}
-                        </h3>
-                        <p className="mt-1 text-[11.5px] leading-relaxed text-slate-500 dark:text-slate-400">
-                          {description}
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white font-heading">
+                        {title}
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        {description}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTab(tabKey)}
+                      className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[#72a800] hover:text-[#5e8700] dark:text-[#9ae600] dark:hover:text-[#b4f52e] transition-colors cursor-pointer"
+                    >
+                      <span>{action}</span>
+                      <ArrowUpRight size={14} />
+                    </button>
+                  </Card>
+                ))}
+              </div>
+
+              {/* User Active Items & Activity Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left: My Active Items Preview */}
+                <div className="lg:col-span-7 rounded-3xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] p-6 shadow-xs">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white font-heading">
+                        My Active Listings
+                      </h3>
+                      <p className="text-xs text-slate-500">Items currently open for claims or community matching</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTab("my-listings")}
+                      className="text-xs font-bold text-[#72a800] dark:text-[#9ae600] hover:underline"
+                    >
+                      View All ({userItems.length})
+                    </button>
+                  </div>
+
+                  <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
+                    {userItems.slice(0, 3).map((it) => {
+                      const id = it.id || it._id;
+                      const isLost = it.type === "lost";
+                      const isResolved = it.status === "resolved";
+
+                      return (
+                        <div key={id} className="py-3.5 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 shrink-0">
+                              {it.imageUrl ? (
+                                <img
+                                  src={it.imageUrl}
+                                  alt={it.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full grid place-items-center text-slate-400">
+                                  <PackageSearch size={16} />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                {it.title}
+                              </p>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+                                <span className="flex items-center gap-1">
+                                  <MapPin size={11} />
+                                  <span className="truncate">{it.location || "Dhaka"}</span>
+                                </span>
+                                <span>·</span>
+                                <span>{it.date || "Recent"}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span
+                              className={cn(
+                                "px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase",
+                                isLost
+                                  ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30"
+                                  : "bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30"
+                              )}
+                            >
+                              {it.type}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleSelectTab("my-listings")}
+                              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                              title="Inspect in My Listings"
+                            >
+                              <Eye size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Right: Recent User Activity Log */}
+                <div className="lg:col-span-5 rounded-3xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] p-6 shadow-xs">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white font-heading">
+                        Recent Activity Log
+                      </h3>
+                      <p className="text-xs text-slate-500">Live notifications and updates on your items</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {USER_ACTIVITY_LOG.map((act) => (
+                      <div
+                        key={act.id}
+                        className="p-3.5 rounded-2xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5"
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900 dark:text-white">
+                            {act.title}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {act.time}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-[11.5px] text-slate-600 dark:text-slate-300">
+                          {act.subtitle}
                         </p>
                         <button
                           type="button"
-                          onClick={() => handleSelectTab(tabKey)}
-                          className="mt-2.5 inline-flex items-center gap-1 text-[11.5px] font-bold text-[#72a800] hover:text-[#5e8700] dark:text-[#9ae600] dark:hover:text-[#b4f52e] transition-colors cursor-pointer"
+                          onClick={() => handleSelectTab("claims")}
+                          className="mt-2 text-[11px] font-bold text-[#72a800] dark:text-[#9ae600] hover:underline inline-flex items-center gap-1"
                         >
-                          <span>{action}</span>
-                          <ArrowUpRight size={13} />
+                          <span>{act.actionLabel}</span>
+                          <ArrowUpRight size={11} />
                         </button>
                       </div>
-                    </Card>
-                  ))}
-                </div>
-              </section>
-
-              {/* Area & Donut Charts */}
-              <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
-                <div className="xl:col-span-8">
-                  <AreaChart
-                    labels={buckets.map((b) => b.label)}
-                    lost={buckets.map((b) => b.lost)}
-                    found={buckets.map((b) => b.found)}
-                    segment={segment}
-                    delay={0.25}
-                  />
-                </div>
-                <div className="xl:col-span-4">
-                  <DonutChart data={statusAgg} delay={0.32} />
-                </div>
-              </div>
-
-              {/* Data Table & Categories Section */}
-              <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
-                <Card delay={0.38} className="xl:col-span-7 overflow-hidden">
-                  <DataTable items={items} />
-                </Card>
-
-                <Card delay={0.44} className="xl:col-span-5 overflow-hidden">
-                  <CardHeader
-                    title="Categories"
-                    subtitle="Where reports concentrate"
-                    right={
-                      <div className="flex items-center gap-3 text-[11px] font-medium text-slate-400 dark:text-slate-500">
-                        <span className="flex items-center gap-1.5">
-                          <span className="h-2 w-2 rounded-full bg-rose-500" />
-                          Lost
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <span className="h-2 w-2 rounded-full bg-[#9ae600]" />
-                          Found
-                        </span>
-                      </div>
-                    }
-                  />
-                  <CategoryBars data={catAgg} segment={segment} />
-                  <div className="mx-5 mt-4 border-t border-dashed border-slate-200 sm:mx-6 dark:border-white/10" />
-                  <div className="px-5 pb-1 pt-4 sm:px-6">
-                    <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
-                      Top locations
-                    </p>
+                    ))}
                   </div>
-                  <LocationList data={locs} />
-                </Card>
+                </div>
               </div>
-            </>
+            </div>
           )}
 
           {/* TAB 5: REPORTS DIRECTORY VIEW */}
@@ -519,7 +634,7 @@ function DashboardContent() {
           )}
 
           <p className="mt-10 text-center text-[11.5px] font-mono text-slate-400 dark:text-slate-600">
-            Findora Admin Console · Synchronized Telemetry System
+            Findora Member Portal · Personal Lost &amp; Found Hub
           </p>
         </div>
       </div>

@@ -79,10 +79,10 @@ export default function Topbar({
           </div>
           <div className="mt-0.5 flex items-center gap-2.5">
             <h1 className="font-display truncate text-lg font-bold tracking-tight text-slate-900 sm:text-xl dark:text-white">
-              Platform Overview
+              User Dashboard
             </h1>
             <span className="hidden items-center rounded-full bg-[#9ae600]/15 px-2.5 py-0.5 text-[10px] font-mono font-bold text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30 sm:flex">
-              LIVE
+              ACTIVE
             </span>
           </div>
         </div>

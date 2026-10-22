@@ -151,7 +151,7 @@ function NavContent({ collapsed, onToggleCollapse, onNavigate, activeTab, onSele
                   Findora
                 </p>
                 <p className="mt-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] text-[#72a800] dark:text-[#9ae600]">
-                  Admin Console
+                  User Workspace
                 </p>
               </div>
             )}
