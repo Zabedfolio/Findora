@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { User, Mail, Shield, Calendar, PackageSearch, PlusCircle, ArrowLeft, LogOut } from "lucide-react";
+import { User, Mail, Shield, Calendar, PackageSearch, PlusCircle, ArrowLeft, LogOut, Edit3 } from "lucide-react";
 import useAuth from "@/hooks/useAuth";
 
 export default function ProfilePage() {
@@ -65,6 +65,14 @@ export default function ProfilePage() {
 
             {/* Quick Actions */}
             <div className="flex sm:flex-col items-center gap-2.5 shrink-0">
+              <Link
+                href="/dashboard/profile"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white transition-colors"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-[#72a800] dark:text-[#9ae600]" />
+                <span>Edit Profile</span>
+              </Link>
+
               <Link
                 href="/reports/new"
                 className="inline-flex items-center gap-1.5 btn-primary-glow px-4 py-2 rounded-xl text-slate-950 font-bold text-xs shadow-sm"
