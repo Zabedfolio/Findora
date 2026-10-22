@@ -34,6 +34,7 @@ export default function Topbar({
   onOpenMenu,
   collapsed = false,
   onToggleCollapse,
+  onOpenProfile,
 }) {
   const { user } = useAuth();
   const today = new Date().toLocaleDateString("en-US", {
@@ -74,7 +75,7 @@ export default function Topbar({
           <div className="flex items-center gap-2 text-[10.5px] font-mono font-bold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
             <span>Findora</span>
             <span className="text-slate-300 dark:text-slate-600">/</span>
-            <span className="text-[#72a800] dark:text-[#9ae600]">Administration</span>
+            <span className="text-[#72a800] dark:text-[#9ae600]">Workspace</span>
           </div>
           <div className="mt-0.5 flex items-center gap-2.5">
             <h1 className="font-display truncate text-lg font-bold tracking-tight text-slate-900 sm:text-xl dark:text-white">
@@ -110,22 +111,41 @@ export default function Topbar({
             </AnimatePresence>
           </IconButton>
 
-          {/* User Profile Avatar Link */}
-          <Link
-            href="/profile"
-            title="View Profile"
-            className="relative ml-0.5 hidden h-10 w-10 overflow-hidden rounded-full ring-2 ring-slate-200 dark:ring-slate-700 hover:ring-[#9ae600] transition-all hover:scale-105 sm:block"
-          >
-            <img
-              src={avatarSrc}
-              alt="Profile"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = "/default-avatar.png";
-              }}
-            />
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#9ae600] border border-white dark:border-slate-900" />
-          </Link>
+          {/* User Profile Avatar */}
+          {onOpenProfile ? (
+            <button
+              type="button"
+              onClick={onOpenProfile}
+              title="View Profile & Settings"
+              className="relative ml-0.5 hidden h-10 w-10 overflow-hidden rounded-full ring-2 ring-slate-200 dark:ring-slate-700 hover:ring-[#9ae600] transition-all hover:scale-105 sm:block cursor-pointer"
+            >
+              <img
+                src={avatarSrc}
+                alt="Profile"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = "/default-avatar.png";
+                }}
+              />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#9ae600] border border-white dark:border-slate-900" />
+            </button>
+          ) : (
+            <Link
+              href="/dashboard?tab=profile"
+              title="View Profile & Settings"
+              className="relative ml-0.5 hidden h-10 w-10 overflow-hidden rounded-full ring-2 ring-slate-200 dark:ring-slate-700 hover:ring-[#9ae600] transition-all hover:scale-105 sm:block"
+            >
+              <img
+                src={avatarSrc}
+                alt="Profile"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = "/default-avatar.png";
+                }}
+              />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#9ae600] border border-white dark:border-slate-900" />
+            </Link>
+          )}
         </div>
       </div>
     </header>

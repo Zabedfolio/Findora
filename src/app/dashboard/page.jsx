@@ -11,9 +11,10 @@ import {
   Search,
   ShieldCheck,
   Timer,
-  Radio,
   FileText,
   LayoutDashboard,
+  Handshake,
+  User,
 } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
@@ -39,18 +40,13 @@ import DataTable from "@/components/dashboard/DataTable";
 import LocationList from "@/components/dashboard/LocationList";
 import CategoryBars from "@/components/dashboard/BarChart";
 import MyListingsView from "@/components/dashboard/MyListingsView";
+import ProfileView from "@/components/dashboard/ProfileView";
+import ClaimsView from "@/components/dashboard/ClaimsView";
 import { cn } from "@/utils/cn";
 
 const delta = (cur, prev) => (prev > 0 ? ((cur - prev) / prev) * 100 : 0);
 
 const ADMIN_TOOLS = [
-  {
-    icon: ClipboardList,
-    title: "Reports & Directory",
-    description: "Browse, filter, and review published lost and found community listings.",
-    tabKey: "reports",
-    action: "View in Dashboard",
-  },
   {
     icon: FileText,
     title: "My Listings Hub",
@@ -59,11 +55,18 @@ const ADMIN_TOOLS = [
     action: "Open My Listings",
   },
   {
-    icon: Radio,
-    title: "Match Radar™ Intelligence",
-    description: "Scan active lost reports against found items with automated confidence scoring.",
-    href: "/match-radar",
-    action: "Launch Radar",
+    icon: Handshake,
+    title: "Claims & Verification",
+    description: "Review ownership claims, verify item proof answers, and track safe handovers.",
+    tabKey: "claims",
+    action: "View Claims Hub",
+  },
+  {
+    icon: User,
+    title: "Profile & Settings",
+    description: "Update personal contact details, credentials, notification alerts, and trust badges.",
+    tabKey: "profile",
+    action: "Open Profile",
   },
 ];
 
@@ -184,11 +187,12 @@ function DashboardContent() {
             onOpenMenu={() => setMenuOpen(true)}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onOpenProfile={() => handleSelectTab("profile")}
           />
 
           {/* In-Dashboard View Switcher Bar */}
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3 dark:border-white/[0.08]">
-            <div className="inline-flex rounded-2xl bg-slate-100 dark:bg-white/[0.05] p-1 border border-slate-200/80 dark:border-white/10">
+            <div className="inline-flex flex-wrap rounded-2xl bg-slate-100 dark:bg-white/[0.05] p-1 border border-slate-200/80 dark:border-white/10 gap-1">
               <button
                 type="button"
                 onClick={() => handleSelectTab("overview")}
@@ -203,7 +207,7 @@ function DashboardContent() {
                   size={14}
                   className={activeTab === "overview" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
                 />
-                <span>Overview & Analytics</span>
+                <span>Overview &amp; Analytics</span>
               </button>
 
               <button
@@ -221,9 +225,23 @@ function DashboardContent() {
                   className={activeTab === "my-listings" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
                 />
                 <span>My Listings</span>
-                <span className="rounded-full bg-[#9ae600]/20 text-[#629400] dark:text-[#9ae600] px-1.5 py-0.2 text-[10px] font-mono font-bold">
-                  Table & Cards
-                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectTab("claims")}
+                className={cn(
+                  "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+                  activeTab === "claims"
+                    ? "bg-white dark:bg-[#070b04] text-slate-950 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                )}
+              >
+                <Handshake
+                  size={14}
+                  className={activeTab === "claims" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
+                />
+                <span>Claims &amp; Verification</span>
               </button>
 
               <button
@@ -242,6 +260,23 @@ function DashboardContent() {
                 />
                 <span>Reports Directory</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectTab("profile")}
+                className={cn(
+                  "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+                  activeTab === "profile"
+                    ? "bg-white dark:bg-[#070b04] text-slate-950 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                )}
+              >
+                <User
+                  size={14}
+                  className={activeTab === "profile" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
+                />
+                <span>Profile &amp; Settings</span>
+              </button>
             </div>
 
             <div className="flex items-center gap-2">
@@ -249,21 +284,35 @@ function DashboardContent() {
                 Dashboard Mode:
               </span>
               <span className="rounded-full bg-[#9ae600]/15 px-2.5 py-0.5 text-[10.5px] font-mono font-bold uppercase tracking-wider text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30">
-                {activeTab === "my-listings"
-                  ? "My Listings View"
+                {activeTab === "profile"
+                  ? "Profile & Settings"
+                  : activeTab === "claims"
+                  ? "Claims & Verification"
+                  : activeTab === "my-listings"
+                  ? "My Listings"
                   : activeTab === "reports"
-                  ? "Directory View"
-                  : "Overview View"}
+                  ? "Reports Directory"
+                  : "Overview & Analytics"}
               </span>
             </div>
           </div>
 
-          {/* TAB 1: MY LISTINGS (Table & Card View inside Dashboard) */}
+          {/* TAB 1: PROFILE & SETTINGS (In-Dashboard View) */}
+          {activeTab === "profile" && (
+            <ProfileView />
+          )}
+
+          {/* TAB 2: CLAIMS & VERIFICATION (In-Dashboard View) */}
+          {activeTab === "claims" && (
+            <ClaimsView />
+          )}
+
+          {/* TAB 3: MY LISTINGS (Table & Card View inside Dashboard) */}
           {activeTab === "my-listings" && (
             <MyListingsView />
           )}
 
-          {/* TAB 2: OVERVIEW VIEW */}
+          {/* TAB 4: OVERVIEW VIEW */}
           {activeTab === "overview" && (
             <>
               <FilterBar
@@ -341,7 +390,7 @@ function DashboardContent() {
                       Admin Workspace &amp; Navigation
                     </h2>
                     <p className="mt-0.5 text-[12px] text-slate-500 dark:text-slate-400">
-                      Quick access to community reports, personal listings, and match intelligence.
+                      Quick access to community reports, personal listings, and claim verification.
                     </p>
                   </div>
                   <span className="rounded-full bg-[#9ae600]/15 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30">
@@ -350,7 +399,7 @@ function DashboardContent() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  {ADMIN_TOOLS.map(({ icon: Icon, title, description, href, tabKey, action }) => (
+                  {ADMIN_TOOLS.map(({ icon: Icon, title, description, tabKey, action }) => (
                     <Card
                       key={title}
                       className="flex items-start gap-3 p-4 hover:border-[#9ae600]/40 transition-colors"
@@ -365,24 +414,14 @@ function DashboardContent() {
                         <p className="mt-1 text-[11.5px] leading-relaxed text-slate-500 dark:text-slate-400">
                           {description}
                         </p>
-                        {tabKey ? (
-                          <button
-                            type="button"
-                            onClick={() => handleSelectTab(tabKey)}
-                            className="mt-2.5 inline-flex items-center gap-1 text-[11.5px] font-bold text-[#72a800] hover:text-[#5e8700] dark:text-[#9ae600] dark:hover:text-[#b4f52e] transition-colors cursor-pointer"
-                          >
-                            <span>{action}</span>
-                            <ArrowUpRight size={13} />
-                          </button>
-                        ) : (
-                          <Link
-                            href={href}
-                            className="mt-2.5 inline-flex items-center gap-1 text-[11.5px] font-bold text-[#72a800] hover:text-[#5e8700] dark:text-[#9ae600] dark:hover:text-[#b4f52e] transition-colors"
-                          >
-                            <span>{action}</span>
-                            <ArrowUpRight size={13} />
-                          </Link>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleSelectTab(tabKey)}
+                          className="mt-2.5 inline-flex items-center gap-1 text-[11.5px] font-bold text-[#72a800] hover:text-[#5e8700] dark:text-[#9ae600] dark:hover:text-[#b4f52e] transition-colors cursor-pointer"
+                        >
+                          <span>{action}</span>
+                          <ArrowUpRight size={13} />
+                        </button>
                       </div>
                     </Card>
                   ))}
@@ -441,7 +480,7 @@ function DashboardContent() {
             </>
           )}
 
-          {/* TAB 3: REPORTS DIRECTORY VIEW */}
+          {/* TAB 5: REPORTS DIRECTORY VIEW */}
           {activeTab === "reports" && (
             <div className="mt-2 space-y-5">
               <FilterBar

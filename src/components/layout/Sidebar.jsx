@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   PackageSearch,
   FileText,
-  Radio,
   ShieldCheck,
   Info,
   User,
@@ -16,14 +15,15 @@ import {
   PlusCircle,
   X,
   Sparkles,
+  Handshake,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 
 const NAV_MAIN = [
   { id: "overview", tabKey: "overview", icon: LayoutDashboard, label: "Overview & Analytics", href: "/dashboard" },
   { id: "my-listings", tabKey: "my-listings", icon: FileText, label: "My Listings", href: "/dashboard?tab=my-listings" },
+  { id: "claims", tabKey: "claims", icon: Handshake, label: "Claims & Verification", href: "/dashboard?tab=claims" },
   { id: "reports", tabKey: "reports", icon: PackageSearch, label: "Reports Directory", href: "/dashboard?tab=reports" },
-  { id: "match-radar", icon: Radio, label: "Match Radar™", href: "/match-radar", badge: "LIVE" },
 ];
 
 const NAV_COMMUNITY = [
@@ -32,7 +32,7 @@ const NAV_COMMUNITY = [
 ];
 
 const NAV_SECONDARY = [
-  { icon: User, label: "Profile & Settings", href: "/profile" },
+  { id: "profile", tabKey: "profile", icon: User, label: "Profile & Settings", href: "/dashboard?tab=profile" },
   { icon: Globe, label: "Public Website", href: "/" },
 ];
 
