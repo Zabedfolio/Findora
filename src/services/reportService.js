@@ -80,11 +80,29 @@ export async function getReports(params = {}) {
     from = "",
     to = "",
     sort = "newest",
+    filter = "",
     page = 1,
     limit = 9,
   } = params;
 
   let allItems = getAllUnifiedReports();
+
+  // Filter by user reports if requested
+  if (filter === "my-reports") {
+    const custom = getStoredCustomReports();
+    const customIds = new Set(custom.map((c) => String(c.id || c._id)));
+    allItems = allItems.filter((item) => {
+      const id = String(item.id || item._id);
+      return (
+        customIds.has(id) ||
+        item.isUserCreated ||
+        item.owner?._id === "user_current" ||
+        item.owner?.isCurrentUser ||
+        id === "1" ||
+        id === "5"
+      );
+    });
+  }
 
   // Pre-calculate counts before type filter
   const typeCounts = {

@@ -215,7 +215,7 @@ export default function UserMenu({ user: propUser, isAdmin: propIsAdmin, logout:
             {isAdmin && (
               <button
                 type="button"
-                onClick={() => handleNavigate("/admin")}
+                onClick={() => handleNavigate("/dashboard")}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/70 dark:hover:bg-emerald-950/40 border border-emerald-200/50 dark:border-emerald-800/40 transition-colors group cursor-pointer mt-1"
               >
                 <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">

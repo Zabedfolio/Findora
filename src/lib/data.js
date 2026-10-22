@@ -1,5 +1,16 @@
 export const DAY = 86_400_000;
-export const C = { rose: "#FB7185", roseDeep: "#F43F5E", emerald: "#34D399", emeraldDeep: "#10B981", violet: "#A78BFA", amber: "#FBBF24", slate: "#8B99B0", indigo: "#818CF8" };
+export const C = {
+  rose: "#FB7185",
+  roseDeep: "#F43F5E",
+  emerald: "#9ae600",
+  emeraldDeep: "#72a800",
+  violet: "#84cc16",
+  amber: "#FBBF24",
+  slate: "#8B99B0",
+  indigo: "#9ae600",
+  lime: "#9ae600",
+  limeDeep: "#72a800"
+};
 export const CATEGORIES = [
   { key: "electronics", label: "Electronics" }, { key: "keys", label: "Keys & Access" },
   { key: "wallets", label: "Wallets & Cards" }, { key: "bags", label: "Bags & Luggage" },
@@ -8,10 +19,10 @@ export const CATEGORIES = [
 ];
 export const LOCATIONS = ["Central Station", "Riverside Mall", "Airport · Terminal 2", "Maple Park", "City University", "Metro Line 4", "Harbor Promenade", "Grand Arena"];
 export const STATUS_META = {
-  returned: { label: "Returned to owner", color: C.emerald, order: 0 },
-  matched: { label: "Match in review", color: C.violet, order: 1 },
-  pending: { label: "Awaiting match", color: C.amber, order: 2 },
-  unclaimed: { label: "Unclaimed", color: C.slate, order: 3 },
+  returned: { label: "Returned to owner", color: "#9ae600", order: 0 },
+  matched: { label: "Match in review", color: "#38bdf8", order: 1 },
+  pending: { label: "Awaiting match", color: "#FBBF24", order: 2 },
+  unclaimed: { label: "Unclaimed", color: "#94a3b8", order: 3 },
 };
 export const RANGES = {
   "7d": { label: "7D", days: 7, bucket: "day" },

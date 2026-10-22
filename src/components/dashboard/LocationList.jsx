@@ -10,7 +10,7 @@ export default function LocationList({ data }) {
         {data.map((d, i) => (
           <div key={d.name} className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.04]">
             <span className="tnum w-4 text-[11px] font-bold text-slate-300 dark:text-slate-600">{i + 1}</span>
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-indigo-500/10 text-indigo-500 dark:bg-indigo-400/10 dark:text-indigo-300">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600]">
               <MapPin size={13} strokeWidth={2.3} />
             </span>
             <div className="min-w-0 flex-1">
@@ -23,7 +23,7 @@ export default function LocationList({ data }) {
                   initial={{ width: 0 }}
                   animate={{ width: `${(d.total / max) * 100}%` }}
                   transition={{ duration: 0.9, delay: 0.1 + i * 0.06, ease: [0.16, 1, 0.3, 1] }}
-                  className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-violet-400"
+                  className="h-full rounded-full bg-gradient-to-r from-[#9ae600] to-emerald-400"
                 />
               </div>
             </div>
