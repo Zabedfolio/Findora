@@ -168,8 +168,9 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/categories" className="hover:text-white transition-colors">
-                    {t("footer.categories")}
+                  <Link href="/match-radar" className="hover:text-white transition-colors flex items-center gap-1.5">
+                    <span>{t("nav.matchRadar", "Match Radar")}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#9ae600]" />
                   </Link>
                 </li>
               </ul>
