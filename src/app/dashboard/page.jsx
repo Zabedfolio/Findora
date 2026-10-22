@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowUpRight,
   ClipboardList,
@@ -11,7 +12,8 @@ import {
   ShieldCheck,
   Timer,
   Radio,
-  UsersRound,
+  FileText,
+  LayoutDashboard,
 } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
@@ -36,6 +38,8 @@ import DonutChart from "@/components/dashboard/DonutChart";
 import DataTable from "@/components/dashboard/DataTable";
 import LocationList from "@/components/dashboard/LocationList";
 import CategoryBars from "@/components/dashboard/BarChart";
+import MyListingsView from "@/components/dashboard/MyListingsView";
+import { cn } from "@/utils/cn";
 
 const delta = (cur, prev) => (prev > 0 ? ((cur - prev) / prev) * 100 : 0);
 
@@ -44,8 +48,15 @@ const ADMIN_TOOLS = [
     icon: ClipboardList,
     title: "Reports & Directory",
     description: "Browse, filter, and review published lost and found community listings.",
-    href: "/reports",
-    action: "Open reports",
+    tabKey: "reports",
+    action: "View in Dashboard",
+  },
+  {
+    icon: FileText,
+    title: "My Listings Hub",
+    description: "Manage, track, and update your submitted lost and found reports as cards or a table.",
+    tabKey: "my-listings",
+    action: "Open My Listings",
   },
   {
     icon: Radio,
@@ -54,22 +65,36 @@ const ADMIN_TOOLS = [
     href: "/match-radar",
     action: "Launch Radar",
   },
-  {
-    icon: ShieldCheck,
-    title: "Trust & Safety Verification",
-    description: "Review ownership claims, blind identifier masking, and safe exchange protocols.",
-    href: "/trust",
-    action: "View Trust Portal",
-  },
 ];
 
-export default function Page() {
+function DashboardContent() {
   const [light, setLight] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [range, setRange] = useState("12m");
   const [segment, setSegment] = useState("all");
   const [location, setLocation] = useState("all");
+
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabParam || "overview");
+
+  useEffect(() => {
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  const handleSelectTab = (tabId) => {
+    setActiveTab(tabId);
+    const url = new URL(window.location.href);
+    if (tabId === "overview") {
+      url.searchParams.delete("tab");
+    } else {
+      url.searchParams.set("tab", tabId);
+    }
+    window.history.pushState({}, "", url.toString());
+  };
 
   useEffect(() => {
     document.documentElement.classList.toggle("light", light);
@@ -136,15 +161,17 @@ export default function Page() {
         <div className="absolute bottom-[-160px] left-[-100px] h-[420px] w-[420px] rounded-full bg-[#9ae600]/[0.07] blur-[140px]" />
       </div>
 
-      {/* Sidebar with functional collapse / expand state */}
+      {/* Sidebar with functional collapse / expand state and in-dashboard tab switching */}
       <Sidebar
         mobileOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        activeTab={activeTab}
+        onSelectTab={handleSelectTab}
       />
 
-      {/* Main Content Area: dynamically adjusts left padding based on sidebar state */}
+      {/* Main Content Area */}
       <div
         className={`relative transition-all duration-300 ${
           sidebarCollapsed ? "lg:pl-[76px]" : "lg:pl-[250px]"
@@ -159,167 +186,298 @@ export default function Page() {
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           />
 
-          <FilterBar
-            range={range}
-            onRange={setRange}
-            segment={segment}
-            onSegment={setSegment}
-            location={location}
-            onLocation={setLocation}
-            windowStart={windowStart}
-            onReset={reset}
-            isDefault={isDefault}
-          />
+          {/* In-Dashboard View Switcher Bar */}
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3 dark:border-white/[0.08]">
+            <div className="inline-flex rounded-2xl bg-slate-100 dark:bg-white/[0.05] p-1 border border-slate-200/80 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => handleSelectTab("overview")}
+                className={cn(
+                  "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+                  activeTab === "overview"
+                    ? "bg-white dark:bg-[#070b04] text-slate-950 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                )}
+              >
+                <LayoutDashboard
+                  size={14}
+                  className={activeTab === "overview" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
+                />
+                <span>Overview & Analytics</span>
+              </button>
 
-          {/* KPI Metrics Strip */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-5">
-            <KpiCard
-              label="Lost items"
-              value={lostReports}
-              format={fmtInt}
-              delta={delta(lostReports, prevLostReports)}
-              icon={PackageSearch}
-              iconClass="bg-rose-500/10 text-rose-500 dark:bg-rose-400/10 dark:text-rose-300"
-              spark={sparks.lost}
-              sparkColor="#FB7185"
-              delay={0.02}
-            />
+              <button
+                type="button"
+                onClick={() => handleSelectTab("my-listings")}
+                className={cn(
+                  "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+                  activeTab === "my-listings"
+                    ? "bg-white dark:bg-[#070b04] text-slate-950 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                )}
+              >
+                <FileText
+                  size={14}
+                  className={activeTab === "my-listings" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
+                />
+                <span>My Listings</span>
+                <span className="rounded-full bg-[#9ae600]/20 text-[#629400] dark:text-[#9ae600] px-1.5 py-0.2 text-[10px] font-mono font-bold">
+                  Table & Cards
+                </span>
+              </button>
 
-            <KpiCard
-              label="Found items"
-              value={foundReports}
-              format={fmtInt}
-              delta={delta(foundReports, prevFoundReports)}
-              icon={Search}
-              iconClass="bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600]"
-              spark={sparks.found}
-              sparkColor="#9ae600"
-              delay={0.08}
-            />
+              <button
+                type="button"
+                onClick={() => handleSelectTab("reports")}
+                className={cn(
+                  "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+                  activeTab === "reports"
+                    ? "bg-white dark:bg-[#070b04] text-slate-950 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/10"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                )}
+              >
+                <PackageSearch
+                  size={14}
+                  className={activeTab === "reports" ? "text-[#72a800] dark:text-[#9ae600]" : ""}
+                />
+                <span>Reports Directory</span>
+              </button>
+            </div>
 
-            <KpiCard
-              label="Successful returns"
-              value={kpis.returned}
-              format={fmtInt}
-              delta={delta(kpis.returned, prevKpis.returned)}
-              icon={PackageCheck}
-              iconClass="bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600]"
-              spark={sparks.returned}
-              sparkColor="#9ae600"
-              delay={0.14}
-            />
-
-            <KpiCard
-              label="Avg. recovery time"
-              value={kpis.avgRecovery}
-              format={fmtHours}
-              delta={delta(kpis.avgRecovery, prevKpis.avgRecovery)}
-              invert
-              icon={Timer}
-              iconClass="bg-amber-500/10 text-amber-600 dark:bg-amber-400/10 dark:text-amber-300"
-              spark={sparks.recovery}
-              sparkColor="#FBBF24"
-              delay={0.2}
-            />
-          </div>
-
-          {/* Quick Workspaces Section */}
-          <section className="mt-5" aria-labelledby="admin-tools-heading">
-            <div className="mb-3 flex items-end justify-between gap-3">
-              <div>
-                <h2
-                  id="admin-tools-heading"
-                  className="font-display text-base font-bold tracking-tight text-slate-900 dark:text-white"
-                >
-                  Admin Workspace &amp; Navigation
-                </h2>
-                <p className="mt-0.5 text-[12px] text-slate-500 dark:text-slate-400">
-                  Quick access to community reports, match radar, and trust verification.
-                </p>
-              </div>
-              <span className="rounded-full bg-[#9ae600]/15 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30">
-                ACTIVE
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500">
+                Dashboard Mode:
+              </span>
+              <span className="rounded-full bg-[#9ae600]/15 px-2.5 py-0.5 text-[10.5px] font-mono font-bold uppercase tracking-wider text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30">
+                {activeTab === "my-listings"
+                  ? "My Listings View"
+                  : activeTab === "reports"
+                  ? "Directory View"
+                  : "Overview View"}
               </span>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              {ADMIN_TOOLS.map(({ icon: Icon, title, description, href, action }) => (
-                <Card
-                  key={title}
-                  className="flex items-start gap-3 p-4 hover:border-[#9ae600]/40 transition-colors"
-                >
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600]">
-                    <Icon size={17} strokeWidth={2.1} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white">
-                      {title}
-                    </h3>
-                    <p className="mt-1 text-[11.5px] leading-relaxed text-slate-500 dark:text-slate-400">
-                      {description}
-                    </p>
-                    <Link
-                      href={href}
-                      className="mt-2.5 inline-flex items-center gap-1 text-[11.5px] font-bold text-[#72a800] hover:text-[#5e8700] dark:text-[#9ae600] dark:hover:text-[#b4f52e] transition-colors"
-                    >
-                      <span>{action}</span>
-                      <ArrowUpRight size={13} />
-                    </Link>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </section>
+          {/* TAB 1: MY LISTINGS (Table & Card View inside Dashboard) */}
+          {activeTab === "my-listings" && (
+            <MyListingsView />
+          )}
 
-          {/* Area & Donut Charts */}
-          <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
-            <div className="xl:col-span-8">
-              <AreaChart
-                labels={buckets.map((b) => b.label)}
-                lost={buckets.map((b) => b.lost)}
-                found={buckets.map((b) => b.found)}
+          {/* TAB 2: OVERVIEW VIEW */}
+          {activeTab === "overview" && (
+            <>
+              <FilterBar
+                range={range}
+                onRange={setRange}
                 segment={segment}
-                delay={0.25}
+                onSegment={setSegment}
+                location={location}
+                onLocation={setLocation}
+                windowStart={windowStart}
+                onReset={reset}
+                isDefault={isDefault}
               />
-            </div>
-            <div className="xl:col-span-4">
-              <DonutChart data={statusAgg} delay={0.32} />
-            </div>
-          </div>
 
-          {/* Data Table & Categories Section */}
-          <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
-            <Card delay={0.38} className="xl:col-span-7 overflow-hidden">
-              <DataTable items={items} />
-            </Card>
+              {/* KPI Metrics Strip */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-5">
+                <KpiCard
+                  label="Lost items"
+                  value={lostReports}
+                  format={fmtInt}
+                  delta={delta(lostReports, prevLostReports)}
+                  icon={PackageSearch}
+                  iconClass="bg-rose-500/10 text-rose-500 dark:bg-rose-400/10 dark:text-rose-300"
+                  spark={sparks.lost}
+                  sparkColor="#FB7185"
+                  delay={0.02}
+                />
 
-            <Card delay={0.44} className="xl:col-span-5 overflow-hidden">
-              <CardHeader
-                title="Categories"
-                subtitle="Where reports concentrate"
-                right={
-                  <div className="flex items-center gap-3 text-[11px] font-medium text-slate-400 dark:text-slate-500">
-                    <span className="flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-rose-500" />
-                      Lost
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-[#9ae600]" />
-                      Found
-                    </span>
-                  </div>
-                }
-              />
-              <CategoryBars data={catAgg} segment={segment} />
-              <div className="mx-5 mt-4 border-t border-dashed border-slate-200 sm:mx-6 dark:border-white/10" />
-              <div className="px-5 pb-1 pt-4 sm:px-6">
-                <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
-                  Top locations
-                </p>
+                <KpiCard
+                  label="Found items"
+                  value={foundReports}
+                  format={fmtInt}
+                  delta={delta(foundReports, prevFoundReports)}
+                  icon={Search}
+                  iconClass="bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600]"
+                  spark={sparks.found}
+                  sparkColor="#9ae600"
+                  delay={0.08}
+                />
+
+                <KpiCard
+                  label="Successful returns"
+                  value={kpis.returned}
+                  format={fmtInt}
+                  delta={delta(kpis.returned, prevKpis.returned)}
+                  icon={PackageCheck}
+                  iconClass="bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600]"
+                  spark={sparks.returned}
+                  sparkColor="#9ae600"
+                  delay={0.14}
+                />
+
+                <KpiCard
+                  label="Avg. recovery time"
+                  value={kpis.avgRecovery}
+                  format={fmtHours}
+                  delta={delta(kpis.avgRecovery, prevKpis.avgRecovery)}
+                  invert
+                  icon={Timer}
+                  iconClass="bg-amber-500/10 text-amber-600 dark:bg-amber-400/10 dark:text-amber-300"
+                  spark={sparks.recovery}
+                  sparkColor="#FBBF24"
+                  delay={0.2}
+                />
               </div>
-              <LocationList data={locs} />
-            </Card>
-          </div>
+
+              {/* Quick Workspaces Section */}
+              <section className="mt-5" aria-labelledby="admin-tools-heading">
+                <div className="mb-3 flex items-end justify-between gap-3">
+                  <div>
+                    <h2
+                      id="admin-tools-heading"
+                      className="font-display text-base font-bold tracking-tight text-slate-900 dark:text-white"
+                    >
+                      Admin Workspace &amp; Navigation
+                    </h2>
+                    <p className="mt-0.5 text-[12px] text-slate-500 dark:text-slate-400">
+                      Quick access to community reports, personal listings, and match intelligence.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-[#9ae600]/15 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30">
+                    ACTIVE
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  {ADMIN_TOOLS.map(({ icon: Icon, title, description, href, tabKey, action }) => (
+                    <Card
+                      key={title}
+                      className="flex items-start gap-3 p-4 hover:border-[#9ae600]/40 transition-colors"
+                    >
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600]">
+                        <Icon size={17} strokeWidth={2.1} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white">
+                          {title}
+                        </h3>
+                        <p className="mt-1 text-[11.5px] leading-relaxed text-slate-500 dark:text-slate-400">
+                          {description}
+                        </p>
+                        {tabKey ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectTab(tabKey)}
+                            className="mt-2.5 inline-flex items-center gap-1 text-[11.5px] font-bold text-[#72a800] hover:text-[#5e8700] dark:text-[#9ae600] dark:hover:text-[#b4f52e] transition-colors cursor-pointer"
+                          >
+                            <span>{action}</span>
+                            <ArrowUpRight size={13} />
+                          </button>
+                        ) : (
+                          <Link
+                            href={href}
+                            className="mt-2.5 inline-flex items-center gap-1 text-[11.5px] font-bold text-[#72a800] hover:text-[#5e8700] dark:text-[#9ae600] dark:hover:text-[#b4f52e] transition-colors"
+                          >
+                            <span>{action}</span>
+                            <ArrowUpRight size={13} />
+                          </Link>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+
+              {/* Area & Donut Charts */}
+              <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
+                <div className="xl:col-span-8">
+                  <AreaChart
+                    labels={buckets.map((b) => b.label)}
+                    lost={buckets.map((b) => b.lost)}
+                    found={buckets.map((b) => b.found)}
+                    segment={segment}
+                    delay={0.25}
+                  />
+                </div>
+                <div className="xl:col-span-4">
+                  <DonutChart data={statusAgg} delay={0.32} />
+                </div>
+              </div>
+
+              {/* Data Table & Categories Section */}
+              <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
+                <Card delay={0.38} className="xl:col-span-7 overflow-hidden">
+                  <DataTable items={items} />
+                </Card>
+
+                <Card delay={0.44} className="xl:col-span-5 overflow-hidden">
+                  <CardHeader
+                    title="Categories"
+                    subtitle="Where reports concentrate"
+                    right={
+                      <div className="flex items-center gap-3 text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                        <span className="flex items-center gap-1.5">
+                          <span className="h-2 w-2 rounded-full bg-rose-500" />
+                          Lost
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="h-2 w-2 rounded-full bg-[#9ae600]" />
+                          Found
+                        </span>
+                      </div>
+                    }
+                  />
+                  <CategoryBars data={catAgg} segment={segment} />
+                  <div className="mx-5 mt-4 border-t border-dashed border-slate-200 sm:mx-6 dark:border-white/10" />
+                  <div className="px-5 pb-1 pt-4 sm:px-6">
+                    <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                      Top locations
+                    </p>
+                  </div>
+                  <LocationList data={locs} />
+                </Card>
+              </div>
+            </>
+          )}
+
+          {/* TAB 3: REPORTS DIRECTORY VIEW */}
+          {activeTab === "reports" && (
+            <div className="mt-2 space-y-5">
+              <FilterBar
+                range={range}
+                onRange={setRange}
+                segment={segment}
+                onSegment={setSegment}
+                location={location}
+                onLocation={setLocation}
+                windowStart={windowStart}
+                onReset={reset}
+                isDefault={isDefault}
+              />
+
+              <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
+                <Card className="xl:col-span-8 overflow-hidden">
+                  <DataTable items={items} />
+                </Card>
+
+                <Card className="xl:col-span-4 overflow-hidden">
+                  <CardHeader
+                    title="Category Breakdown"
+                    subtitle="Filter distribution across categories"
+                  />
+                  <CategoryBars data={catAgg} segment={segment} />
+                  <div className="mx-5 mt-4 border-t border-dashed border-slate-200 sm:mx-6 dark:border-white/10" />
+                  <div className="px-5 pb-1 pt-4 sm:px-6">
+                    <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                      Top Locations
+                    </p>
+                  </div>
+                  <LocationList data={locs} />
+                </Card>
+              </div>
+            </div>
+          )}
 
           <p className="mt-10 text-center text-[11.5px] font-mono text-slate-400 dark:text-slate-600">
             Findora Admin Console · Synchronized Telemetry System
@@ -327,5 +485,13 @@ export default function Page() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <DashboardContent />
+    </Suspense>
   );
 }

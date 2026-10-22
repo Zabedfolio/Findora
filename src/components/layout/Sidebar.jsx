@@ -20,10 +20,10 @@ import {
 import { cn } from "../../utils/cn";
 
 const NAV_MAIN = [
-  { icon: LayoutDashboard, label: "Overview & Analytics", href: "/dashboard" },
-  { icon: PackageSearch, label: "Reports Directory", href: "/reports" },
-  { icon: FileText, label: "My Listings", href: "/reports?filter=my-reports" },
-  { icon: Radio, label: "Match Radar™", href: "/match-radar", badge: "LIVE" },
+  { id: "overview", tabKey: "overview", icon: LayoutDashboard, label: "Overview & Analytics", href: "/dashboard" },
+  { id: "my-listings", tabKey: "my-listings", icon: FileText, label: "My Listings", href: "/dashboard?tab=my-listings" },
+  { id: "reports", tabKey: "reports", icon: PackageSearch, label: "Reports Directory", href: "/dashboard?tab=reports" },
+  { id: "match-radar", icon: Radio, label: "Match Radar™", href: "/match-radar", badge: "LIVE" },
 ];
 
 const NAV_COMMUNITY = [
@@ -36,28 +36,47 @@ const NAV_SECONDARY = [
   { icon: Globe, label: "Public Website", href: "/" },
 ];
 
-function NavLinkItem({ item, collapsed, onNavigate }) {
+function NavLinkItem({ item, collapsed, onNavigate, activeTab, onSelectTab }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const filter = searchParams ? searchParams.get("filter") : null;
+  const tabFromUrl = searchParams ? searchParams.get("tab") : null;
+  const currentTab = activeTab || tabFromUrl || "overview";
 
   let isActive = false;
-  if (item.href === "/dashboard") {
-    isActive = pathname === "/dashboard";
-  } else if (item.href === "/reports?filter=my-reports") {
-    isActive = pathname === "/reports" && filter === "my-reports";
-  } else if (item.href === "/reports") {
-    isActive = pathname === "/reports" && filter !== "my-reports";
+  if (pathname === "/dashboard") {
+    if (item.tabKey) {
+      isActive = currentTab === item.tabKey;
+    } else {
+      isActive = item.href === "/dashboard" && currentTab === "overview";
+    }
   } else {
     isActive =
       pathname === item.href ||
       (item.href !== "/" && pathname.startsWith(`${item.href}/`));
   }
 
+  const handleClick = (e) => {
+    if (pathname === "/dashboard" && item.tabKey && onSelectTab) {
+      e.preventDefault();
+      onSelectTab(item.tabKey);
+      if (onNavigate) onNavigate();
+      // Update URL query string smoothly without reload
+      const url = new URL(window.location.href);
+      if (item.tabKey === "overview") {
+        url.searchParams.delete("tab");
+      } else {
+        url.searchParams.set("tab", item.tabKey);
+      }
+      window.history.pushState({}, "", url.toString());
+    } else {
+      if (onNavigate) onNavigate();
+    }
+  };
+
   return (
     <Link
       href={item.href}
-      onClick={onNavigate}
+      onClick={handleClick}
       title={collapsed ? item.label : undefined}
       aria-current={isActive ? "page" : undefined}
       className={cn(
@@ -102,7 +121,7 @@ function NavLinkItem({ item, collapsed, onNavigate }) {
   );
 }
 
-function NavContent({ collapsed, onToggleCollapse, onNavigate }) {
+function NavContent({ collapsed, onToggleCollapse, onNavigate, activeTab, onSelectTab }) {
   return (
     <div className="flex h-full flex-col justify-between select-none">
       {/* Top: Brand Header */}
@@ -169,6 +188,8 @@ function NavContent({ collapsed, onToggleCollapse, onNavigate }) {
                 item={item}
                 collapsed={collapsed}
                 onNavigate={onNavigate}
+                activeTab={activeTab}
+                onSelectTab={onSelectTab}
               />
             ))}
           </nav>
@@ -188,6 +209,8 @@ function NavContent({ collapsed, onToggleCollapse, onNavigate }) {
                 item={item}
                 collapsed={collapsed}
                 onNavigate={onNavigate}
+                activeTab={activeTab}
+                onSelectTab={onSelectTab}
               />
             ))}
           </nav>
@@ -207,6 +230,8 @@ function NavContent({ collapsed, onToggleCollapse, onNavigate }) {
                 item={item}
                 collapsed={collapsed}
                 onNavigate={onNavigate}
+                activeTab={activeTab}
+                onSelectTab={onSelectTab}
               />
             ))}
           </nav>
@@ -247,6 +272,8 @@ export default function Sidebar({
   onClose,
   collapsed = false,
   onToggleCollapse,
+  activeTab = "overview",
+  onSelectTab,
 }) {
   return (
     <>
@@ -261,6 +288,8 @@ export default function Sidebar({
           <NavContent
             collapsed={collapsed}
             onToggleCollapse={onToggleCollapse}
+            activeTab={activeTab}
+            onSelectTab={onSelectTab}
           />
         </Suspense>
       </aside>
@@ -292,7 +321,11 @@ export default function Sidebar({
                 <X size={16} />
               </button>
               <Suspense fallback={null}>
-                <NavContent onNavigate={onClose} />
+                <NavContent
+                  onNavigate={onClose}
+                  activeTab={activeTab}
+                  onSelectTab={onSelectTab}
+                />
               </Suspense>
             </motion.aside>
           </>
