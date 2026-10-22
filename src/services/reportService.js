@@ -400,3 +400,27 @@ export async function deleteReport(id) {
   return { success: true, id };
 }
 
+/**
+ * Update report status (e.g. 'lost', 'found', 'resolved')
+ */
+export async function updateReportStatus(id, newStatus) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/reports/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+  }
+
+  if (typeof window !== "undefined") {
+    const statusMap = getStoredStatusMap();
+    statusMap[id] = newStatus;
+    localStorage.setItem(STORAGE_KEY_STATUS_MAP, JSON.stringify(statusMap));
+  }
+
+  return { success: true, id, status: newStatus };
+}
