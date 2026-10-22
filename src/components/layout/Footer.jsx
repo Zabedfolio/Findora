@@ -15,7 +15,7 @@ export default function Footer() {
     setCurrentYear(new Date().getFullYear());
   }, []);
 
-  if (pathname?.startsWith("/dashboard")) {
+  if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/admin")) {
     return null;
   }
 

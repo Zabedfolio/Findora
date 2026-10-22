@@ -30,7 +30,7 @@ export default function Navbar() {
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  if (pathname?.startsWith("/dashboard")) {
+  if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/admin")) {
     return null;
   }
 
