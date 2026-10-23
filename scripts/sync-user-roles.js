@@ -1,8 +1,12 @@
+require("dotenv").config({ path: ".env.local" });
 const { MongoClient } = require("mongodb");
 
-const uri = process.env.MONGODB_URI || "mongodb+srv://findora:wXunYVhWrYW4PwDU@cluster0.mldxc9s.mongodb.net/";
+const uri = process.env.MONGODB_URI;
+if (!uri) {
+  throw new Error("MONGODB_URI environment variable is required. Please set it in .env.local or your environment.");
+}
 const dbName = process.env.MONGODB_NAME || "findora";
-const IMGBB_KEY = process.env.IMGBB_API_KEY || "c7ee77db12d04d4f5b27b44a8a9d346b";
+const IMGBB_KEY = process.env.IMGBB_API_KEY;
 
 async function uploadVectorAvatarToImgBB(name, email) {
   const rawSeed = (name || email || "FindoraMember").trim();
