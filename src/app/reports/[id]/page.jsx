@@ -1,10 +1,11 @@
 "use client";
 
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getReportById } from "@/services/reportService";
+import useAuth from "@/hooks/useAuth";
 import ImageGallery from "@/components/reports/ImageGallery";
 import ReportDetailsInfo from "@/components/reports/ReportDetailsInfo";
 import PosterCard from "@/components/reports/PosterCard";
@@ -18,7 +19,6 @@ import {
   PackageSearch,
   Share2,
   AlertCircle,
-  Sparkles,
 } from "lucide-react";
 import toast from "@/lib/toast";
 
@@ -34,6 +34,43 @@ function ReportDetailsContent() {
   const router = useRouter();
   const rawParams = useParams();
   const id = rawParams?.id;
+  const { user, loading: authLoading } = useAuth();
+  const wasLoggedInRef = React.useRef(Boolean(user));
+
+  React.useEffect(() => {
+    if (user) {
+      wasLoggedInRef.current = true;
+    }
+  }, [user]);
+
+  // If user logs out while on the report details page, automatically navigate to login with redirect
+  React.useEffect(() => {
+    const targetUrl = id
+      ? `/login?redirect=${encodeURIComponent(`/reports/${id}`)}`
+      : "/login";
+
+    const handleLogout = () => {
+      window.location.href = targetUrl;
+    };
+
+    const handleStorage = (e) => {
+      if (e.key === "findora_logged_out" && e.newValue === "true") {
+        window.location.href = targetUrl;
+      }
+    };
+
+    window.addEventListener("findora_user_logged_out", handleLogout);
+    window.addEventListener("storage", handleStorage);
+
+    if (!authLoading && wasLoggedInRef.current && !user) {
+      window.location.href = targetUrl;
+    }
+
+    return () => {
+      window.removeEventListener("findora_user_logged_out", handleLogout);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [user, authLoading, id]);
 
   // Fetch single report by ID using React Query
   const {

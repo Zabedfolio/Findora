@@ -52,7 +52,7 @@ export function SegmentedControl({ options, value, onChange, size = "md" }) {
             key={opt.value}
             onClick={() => onChange(opt.value)}
             className={cn(
-              "relative rounded-full font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400",
+              "relative rounded-full font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9ae600]",
               size === "md" ? "px-3.5 py-1.5 text-[12.5px]" : "px-2.5 py-1 text-[11.5px]",
               active
                 ? "text-slate-900 dark:text-white"
@@ -96,7 +96,7 @@ export function Select({ value, onChange, options, icon, label }) {
           "flex items-center gap-2 rounded-full py-2 pl-3.5 pr-3 text-[12.5px] font-medium",
           "bg-white text-slate-700 ring-1 ring-slate-900/10 transition-all hover:ring-slate-900/20",
           "dark:bg-white/[0.06] dark:text-slate-200 dark:ring-white/10 dark:hover:ring-white/20",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9ae600]"
         )}
       >
         {icon && <span className="text-slate-400 dark:text-slate-500">{icon}</span>}
@@ -132,7 +132,7 @@ export function Select({ value, onChange, options, icon, label }) {
                 )}
               >
                 {opt.label}
-                {opt.value === value && <Check size={14} className="text-indigo-500" />}
+                {opt.value === value && <Check size={14} className="text-[#72a800] dark:text-[#9ae600]" />}
               </button>
             ))}
           </motion.div>

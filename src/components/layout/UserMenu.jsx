@@ -142,6 +142,13 @@ export default function UserMenu({ user: propUser, isAdmin: propIsAdmin, logout:
                   <p className="text-sm font-bold text-slate-950 dark:text-white truncate font-heading">
                     {displayName}
                   </p>
+                  <span className={`text-[10px] font-mono uppercase px-1.5 py-0.2 rounded font-bold ${
+                    isAdmin
+                      ? "bg-[#9ae600]/20 text-[#598c00] dark:text-[#9ae600]"
+                      : "bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300"
+                  }`}>
+                    {user.role || "user"}
+                  </span>
                 </div>
                 {displayEmail && (
                   <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
@@ -157,7 +164,7 @@ export default function UserMenu({ user: propUser, isAdmin: propIsAdmin, logout:
             {/* Dashboard */}
             <button
               type="button"
-              onClick={() => handleNavigate("/reports")}
+              onClick={() => handleNavigate("/dashboard")}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
             >
               <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#9ae600] group-hover:text-slate-950 transition-colors shrink-0">
@@ -176,7 +183,7 @@ export default function UserMenu({ user: propUser, isAdmin: propIsAdmin, logout:
             {/* My Reports */}
             <button
               type="button"
-              onClick={() => handleNavigate("/reports?filter=my-reports")}
+              onClick={() => handleNavigate("/dashboard/my-reports")}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
             >
               <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#9ae600] group-hover:text-slate-950 transition-colors shrink-0">
@@ -214,7 +221,7 @@ export default function UserMenu({ user: propUser, isAdmin: propIsAdmin, logout:
             {/* Profile */}
             <button
               type="button"
-              onClick={() => handleNavigate("/profile")}
+              onClick={() => handleNavigate("/dashboard/profile")}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
             >
               <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#9ae600] group-hover:text-slate-950 transition-colors shrink-0">

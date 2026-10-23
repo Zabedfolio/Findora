@@ -38,19 +38,25 @@ export function useTweenedSeries(target, duration = 0.8) {
   return display;
 }
 
-export function useCountUp(target, duration = 0.9) {
-  const [display, setDisplay] = useState(target);
-  const ref = useRef(target);
+export function useCountUp(target = 0, duration = 0.9) {
+  const safeTarget = typeof target === "number" && !isNaN(target) ? target : 0;
+  const [display, setDisplay] = useState(safeTarget);
+  const ref = useRef(safeTarget);
+
   useEffect(() => {
-    const controls = animate(ref.current, target, {
+    const val = typeof target === "number" && !isNaN(target) ? target : 0;
+    const current = typeof ref.current === "number" && !isNaN(ref.current) ? ref.current : 0;
+    const controls = animate(current, val, {
       duration,
       ease: [0.25, 0.8, 0.3, 1],
       onUpdate: (v) => {
-        ref.current = v;
-        setDisplay(v);
+        const safeV = typeof v === "number" && !isNaN(v) ? v : 0;
+        ref.current = safeV;
+        setDisplay(safeV);
       },
     });
     return () => controls.stop();
   }, [target, duration]);
-  return display;
+
+  return typeof display === "number" && !isNaN(display) ? display : 0;
 }

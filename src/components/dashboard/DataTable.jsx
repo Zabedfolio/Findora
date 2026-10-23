@@ -100,7 +100,7 @@ export default function DataTable({ items }) {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search items, IDs, people…"
-              className={cn("h-9 w-44 rounded-full bg-slate-100/80 pl-9 pr-3 text-[12.5px] text-slate-700 ring-1 ring-transparent transition-all placeholder:text-slate-400 focus:w-56 focus:bg-white focus:ring-indigo-400/50 sm:w-52 dark:bg-white/[0.06] dark:text-slate-200 dark:focus:bg-ink-800")}
+              className={cn("h-9 w-44 rounded-full bg-slate-100/80 pl-9 pr-3 text-[12.5px] text-slate-700 ring-1 ring-transparent transition-all placeholder:text-slate-400 focus:w-56 focus:bg-white focus:ring-[#9ae600]/60 sm:w-52 dark:bg-white/[0.06] dark:text-slate-200 dark:focus:bg-ink-800")}
             />
           </div>
           <button onClick={exportCsv} className="flex h-9 items-center gap-1.5 rounded-full bg-slate-900 px-3.5 text-[12px] font-semibold text-white transition-all hover:scale-[1.03] hover:bg-slate-800 active:scale-95 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100">

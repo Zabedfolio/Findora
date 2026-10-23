@@ -30,14 +30,13 @@ export default function Navbar() {
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  if (pathname?.startsWith("/dashboard")) {
+  if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/admin")) {
     return null;
   }
 
   const navLinks = [
     { href: "/reports", label: t("nav.browse") },
-    { href: "/categories", label: t("nav.categories") },
-    { href: "/how-it-works", label: t("nav.howItWorks") },
+    { href: "/match-radar", label: t("nav.matchRadar", "Match Radar"), isRadar: true },
     { href: "/trust", label: t("nav.trust") },
   ];
 
@@ -77,11 +76,22 @@ export default function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`transition-colors whitespace-nowrap ${
+                    className={`flex items-center gap-1.5 transition-colors whitespace-nowrap ${
                       isActive ? "text-slate-950 font-semibold" : "hover:text-slate-900"
                     }`}
                   >
-                    {link.label}
+                    {link.isRadar && (
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#9ae600] opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#9ae600]" />
+                      </span>
+                    )}
+                    <span>{link.label}</span>
+                    {link.isRadar && (
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-[#9ae600]/20 text-[#629400] border border-[#9ae600]/40 leading-none">
+                        LIVE
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -131,11 +141,24 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`py-2 transition-colors ${
+                  className={`flex items-center justify-between py-2 transition-colors ${
                     isActive ? "text-slate-950 font-semibold" : "hover:text-slate-900"
                   }`}
                 >
-                  {link.label}
+                  <div className="flex items-center gap-2">
+                    {link.isRadar && (
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#9ae600] opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#9ae600]" />
+                      </span>
+                    )}
+                    <span>{link.label}</span>
+                  </div>
+                  {link.isRadar && (
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#9ae600]/20 text-[#629400] border border-[#9ae600]/40">
+                      LIVE RADAR
+                    </span>
+                  )}
                 </Link>
               );
             })}

@@ -70,4 +70,4 @@ export default function ToastProvider({ children }) {
   );
 }
 
-export { toast } from "react-hot-toast";
+export { toast } from "@/lib/toast";
