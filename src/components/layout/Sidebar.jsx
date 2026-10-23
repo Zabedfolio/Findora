@@ -28,8 +28,8 @@ import useAuth from "@/hooks/useAuth";
 // User Workspace Navigation Items
 const NAV_USER_MAIN = [
   { id: "overview", tabKey: "overview", icon: LayoutDashboard, label: "Overview & Analytics", href: "/dashboard" },
-  { id: "reports", tabKey: "reports", icon: FileText, label: "My Reports", href: "/dashboard?tab=reports" },
-  { id: "claims", tabKey: "claims", icon: Handshake, label: "Claims & Verification", href: "/dashboard?tab=claims" },
+  { id: "reports", tabKey: "reports", icon: FileText, label: "My Reports", href: "/dashboard/my-reports" },
+  { id: "claims", tabKey: "claims", icon: Handshake, label: "Claims & Verification", href: "/dashboard/claims" },
 ];
 
 const NAV_USER_COMMUNITY = [

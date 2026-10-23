@@ -199,6 +199,25 @@ export default function UserMenu({ user: propUser, isAdmin: propIsAdmin, logout:
               </div>
             </button>
 
+            {/* My Claims */}
+            <button
+              type="button"
+              onClick={() => handleNavigate("/dashboard/claims")}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#9ae600] group-hover:text-slate-950 transition-colors shrink-0">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 group-hover:text-slate-950 dark:group-hover:text-white">
+                  My Claims
+                </p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">
+                  Track claimed items &amp; handovers
+                </p>
+              </div>
+            </button>
+
             {/* Profile */}
             <button
               type="button"

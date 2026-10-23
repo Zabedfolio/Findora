@@ -4,3 +4,5 @@
 export { lostReports } from "./lostReports";
 export { foundReports } from "./foundReports";
 export { matchScenarios } from "./matchScenarios";
+export { demoClaims } from "./claimsData";
+
