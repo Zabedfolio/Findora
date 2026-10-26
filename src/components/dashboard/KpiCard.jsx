@@ -17,6 +17,7 @@ function Sparkline({ data = [], color }) {
   const id = `sp-${(color || "#9ae600").replace("#", "")}`;
 
   return (
+    
     <svg viewBox={`0 0 ${w} ${h}`} className="h-10 w-[90px] sm:w-[105px] overflow-visible">
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
