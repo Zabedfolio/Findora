@@ -75,11 +75,21 @@ function SignInFormContent() {
 
       toast.success("Welcome back! Signed in successfully.");
 
+      // Determine destination: honor explicit redirect or route based on role
+      const isUserAdmin =
+        data?.user?.role === "admin" ||
+        formData.email?.toLowerCase().includes("admin");
+      const defaultDest = isUserAdmin ? "/admin" : "/dashboard";
+      const destination =
+        redirectTarget && redirectTarget !== "/dashboard"
+          ? redirectTarget
+          : defaultDest;
+
       // Redirect to target destination
       if (typeof window !== "undefined") {
-        window.location.href = redirectTarget;
+        window.location.href = destination;
       } else {
-        router.push(redirectTarget);
+        router.push(destination);
         router.refresh();
       }
     } catch (err) {
@@ -94,10 +104,16 @@ function SignInFormContent() {
   const handleDemoSignIn = (targetRole) => {
     loginDemoUser(targetRole);
     toast.success(`Signed in as Demo ${targetRole === "admin" ? "Administrator" : "Community Member"}!`);
+    const destination =
+      redirectTarget && redirectTarget !== "/dashboard"
+        ? redirectTarget
+        : targetRole === "admin"
+        ? "/admin"
+        : "/dashboard";
     if (typeof window !== "undefined") {
-      window.location.href = redirectTarget;
+      window.location.href = destination;
     } else {
-      router.push(redirectTarget);
+      router.push(destination);
       router.refresh();
     }
   };

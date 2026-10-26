@@ -12,7 +12,6 @@ import {
   MapPin,
   User,
   Image as ImageIcon,
-  Sparkles,
   Info,
   Maximize2,
   X,
@@ -246,7 +245,7 @@ export default function ClaimReviewModal({
               {proof.additionalProof && (
                 <div className="mt-3 rounded-xl border border-purple-200 bg-purple-50/80 p-3 text-xs text-purple-950 dark:border-purple-800/50 dark:bg-purple-950/30 dark:text-purple-200">
                   <div className="flex items-center gap-1.5 font-bold mb-1">
-                    <Sparkles size={12} className="text-purple-600 dark:text-purple-400" />
+                    <FileCheck size={12} className="text-purple-600 dark:text-purple-400" />
                     <span>Claimant's Follow-up Response:</span>
                   </div>
                   <p className="font-mono text-[12px]">{proof.additionalProof}</p>
