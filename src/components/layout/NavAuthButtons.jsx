@@ -68,12 +68,12 @@ export default function NavAuthButtons({
             </div>
 
             <Link
-              href="/reports"
+              href={isAdmin ? "/admin" : "/dashboard"}
               onClick={onActionClick}
               className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               <LayoutDashboard className="w-4 h-4 text-slate-400" />
-              <span>Dashboard</span>
+              <span>{isAdmin ? "Admin Dashboard" : "Dashboard"}</span>
             </Link>
 
             <Link
