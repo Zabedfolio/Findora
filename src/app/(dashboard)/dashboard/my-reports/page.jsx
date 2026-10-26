@@ -91,7 +91,7 @@ export default function MyReportsPage() {
 
   useEffect(() => {
     fetchUserReports();
-  }, [user]);
+  }, [user?.id, user?.email]);
 
   // Quick Action: Update Status (Lost, Found, Resolved)
   const handleStatusChange = async (id, newStatus, currentStatus) => {

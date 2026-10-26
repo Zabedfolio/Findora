@@ -51,8 +51,20 @@ function DashboardLayoutContent({ children }) {
     if (pathname?.includes("/admin/users")) {
       return { title: "User Directory & Access Control", section: "User Management", badge: "ADMIN PRIVILEGES" };
     }
+    if (pathname?.includes("/admin/handovers")) {
+      return { title: "Handover Oversight & Safety Monitor", section: "Trust & Safety", badge: "ADMIN PRIVILEGES" };
+    }
+    if (pathname?.includes("/admin/profile")) {
+      return { title: "Admin Profile & Settings", section: "Admin Account", badge: "ADMIN PRIVILEGES" };
+    }
     if (pathname?.startsWith("/admin")) {
       return { title: "Admin Overview & Telemetry", section: "Control Center", badge: "ADMIN PRIVILEGES" };
+    }
+    if (pathname?.includes("/dashboard/handovers")) {
+      return { title: "Handovers & Return Meetings", section: "Safe Exchange", badge: "ACTIVE" };
+    }
+    if (pathname?.includes("/dashboard/claims")) {
+      return { title: "Claims & Ownership Verification", section: "Claims Hub", badge: "ACTIVE" };
     }
     if (pathname?.includes("/dashboard/my-reports")) {
       return { title: "My Reports Hub", section: "Workspace", badge: "ACTIVE" };

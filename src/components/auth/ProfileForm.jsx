@@ -21,7 +21,7 @@ export default function ProfileForm() {
       setPhone(user.phone || "");
       setAvatarPreview(user.image || "");
     }
-  }, [user]);
+  }, [user?.name, user?.phone, user?.image]);
 
   // Handle local avatar file upload with instant base64 preview
   const handleAvatarChange = (e) => {

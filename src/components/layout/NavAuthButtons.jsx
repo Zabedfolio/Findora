@@ -72,8 +72,14 @@ export default function NavAuthButtons({
               onClick={onActionClick}
               className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
-              <LayoutDashboard className="w-4 h-4 text-slate-400" />
-              <span>{isAdmin ? "Admin Dashboard" : "Dashboard"}</span>
+              {isAdmin ? (
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              ) : (
+                <LayoutDashboard className="w-4 h-4 text-slate-400" />
+              )}
+              <span className={isAdmin ? "font-bold text-emerald-600 dark:text-emerald-400" : ""}>
+                {isAdmin ? "Admin Panel" : "Dashboard"}
+              </span>
             </Link>
 
             <Link
@@ -86,24 +92,13 @@ export default function NavAuthButtons({
             </Link>
 
             <Link
-              href="/dashboard/profile"
+              href={isAdmin ? "/admin/profile" : "/dashboard/profile"}
               onClick={onActionClick}
               className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               <UserIcon className="w-4 h-4 text-slate-400" />
               <span>Profile</span>
             </Link>
-
-            {isAdmin && (
-              <Link
-                href="/admin"
-                onClick={onActionClick}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
-              >
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span>Admin Panel</span>
-              </Link>
-            )}
 
             <button
               type="button"

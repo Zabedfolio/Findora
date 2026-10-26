@@ -8,6 +8,7 @@ import {
   FileText,
   User as UserIcon,
   ShieldCheck,
+  Handshake,
   LogOut,
   ChevronDown,
 } from "lucide-react";
@@ -161,21 +162,25 @@ export default function UserMenu({ user: propUser, isAdmin: propIsAdmin, logout:
 
           {/* Navigation Links */}
           <div className="py-1 space-y-0.5">
-            {/* Dashboard */}
+            {/* Primary Hub: Dynamic based on role (Admin Panel for Admin, Dashboard for User) */}
             <button
               type="button"
               onClick={() => handleNavigate(isAdmin ? "/admin" : "/dashboard")}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#9ae600] group-hover:text-slate-950 transition-colors shrink-0">
-                <LayoutDashboard className="w-4 h-4" />
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors shrink-0 ${
+                isAdmin
+                  ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 group-hover:bg-[#9ae600] group-hover:text-slate-950"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 group-hover:bg-[#9ae600] group-hover:text-slate-950"
+              }`}>
+                {isAdmin ? <ShieldCheck className="w-4 h-4" /> : <LayoutDashboard className="w-4 h-4" />}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 group-hover:text-slate-950 dark:group-hover:text-white">
-                  {isAdmin ? "Admin Dashboard" : "Dashboard"}
+                  {isAdmin ? "Admin Panel" : "Dashboard"}
                 </p>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">
-                  {isAdmin ? "Platform metrics & controls" : "Overview & recent activity"}
+                  {isAdmin ? "Platform controls & claims review" : "Overview & recent activity"}
                 </p>
               </div>
             </button>
@@ -213,7 +218,26 @@ export default function UserMenu({ user: propUser, isAdmin: propIsAdmin, logout:
                   My Claims
                 </p>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">
-                  Track claimed items &amp; handovers
+                  Track claimed items &amp; verification
+                </p>
+              </div>
+            </button>
+
+            {/* Safe Handovers */}
+            <button
+              type="button"
+              onClick={() => handleNavigate("/dashboard/handovers")}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#9ae600] group-hover:text-slate-950 transition-colors shrink-0">
+                <Handshake className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 group-hover:text-slate-950 dark:group-hover:text-white">
+                  Safe Handovers
+                </p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">
+                  Meeting schedules &amp; custody return
                 </p>
               </div>
             </button>
@@ -221,7 +245,7 @@ export default function UserMenu({ user: propUser, isAdmin: propIsAdmin, logout:
             {/* Profile */}
             <button
               type="button"
-              onClick={() => handleNavigate("/dashboard/profile")}
+              onClick={() => handleNavigate(isAdmin ? "/admin/profile" : "/dashboard/profile")}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
             >
               <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#9ae600] group-hover:text-slate-950 transition-colors shrink-0">
@@ -236,29 +260,6 @@ export default function UserMenu({ user: propUser, isAdmin: propIsAdmin, logout:
                 </p>
               </div>
             </button>
-
-            {/* Admin Panel (Conditional on isAdmin) */}
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={() => handleNavigate("/admin")}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/70 dark:hover:bg-emerald-950/40 border border-emerald-200/50 dark:border-emerald-800/40 transition-colors group cursor-pointer mt-1"
-              >
-                <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-xs sm:text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                      Admin Panel
-                    </p>
-                  </div>
-                  <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80 truncate">
-                    Platform controls &amp; claims review
-                  </p>
-                </div>
-              </button>
-            )}
           </div>
 
           {/* Bottom Divider & Logout */}

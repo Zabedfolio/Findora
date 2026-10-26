@@ -76,7 +76,7 @@ export default function MyReportsTable() {
 
   useEffect(() => {
     loadReports();
-  }, [user]);
+  }, [user?.id, user?.email]);
 
   // Handle Quick Status Action (Lost, Found, Resolved)
   const handleStatusChange = async (id, newStatus, currentStatus) => {

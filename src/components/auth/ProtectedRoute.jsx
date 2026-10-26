@@ -50,7 +50,7 @@ export default function ProtectedRoute({ children, roles }) {
       window.removeEventListener("findora_user_logged_out", handleLogout);
       window.removeEventListener("storage", handleStorage);
     };
-  }, [user, loading, router, pathname]);
+  }, [Boolean(user), loading, router, pathname]);
 
   // While auth state is loading, display the full page centered loader
   if (loading) {

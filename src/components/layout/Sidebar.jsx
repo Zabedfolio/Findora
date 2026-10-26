@@ -21,6 +21,7 @@ import {
   MessageSquareWarning,
   Flame,
   Activity,
+  FileCheck,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import useAuth from "@/hooks/useAuth";
@@ -29,7 +30,8 @@ import useAuth from "@/hooks/useAuth";
 const NAV_USER_MAIN = [
   { id: "overview", tabKey: "overview", icon: LayoutDashboard, label: "Overview & Analytics", href: "/dashboard" },
   { id: "reports", tabKey: "reports", icon: FileText, label: "My Reports", href: "/dashboard/my-reports" },
-  { id: "claims", tabKey: "claims", icon: Handshake, label: "Claims & Verification", href: "/dashboard/claims" },
+  { id: "claims", tabKey: "claims", icon: FileCheck, label: "Claims & Verification", href: "/dashboard/claims" },
+  { id: "handovers", icon: Handshake, label: "Safe Handovers", href: "/dashboard/handovers" },
 ];
 
 const NAV_USER_COMMUNITY = [
@@ -46,15 +48,15 @@ const NAV_USER_SECONDARY = [
 const NAV_ADMIN_MAIN = [
   { id: "admin-overview", icon: LayoutDashboard, label: "Overview & Metrics", href: "/admin" },
   { id: "admin-reports", icon: FileText, label: "Manage Reports", href: "/admin/reports", badge: "Listings" },
+  { id: "admin-handovers", icon: Handshake, label: "Handover Oversight", href: "/admin/handovers", badge: "Live" },
   { id: "admin-reviews", icon: MessageSquareWarning, label: "Review Moderation", href: "/admin/reviews", badge: "Mod" },
   { id: "admin-fraud", icon: ShieldAlert, label: "Fraud & Abuse", href: "/admin/fraud", badge: "Alerts" },
   { id: "admin-users", icon: Users, label: "User Management", href: "/admin/users", badge: "Staff" },
 ];
 
 const NAV_ADMIN_SECONDARY = [
-  { id: "user-dashboard", icon: PackageSearch, label: "User Dashboard", href: "/dashboard" },
   { id: "public-web", icon: Globe, label: "Public Website", href: "/" },
-  { id: "profile", tabKey: "profile", icon: User, label: "Profile & Settings", href: "/dashboard?tab=profile" },
+  { id: "profile", icon: User, label: "Profile & Settings", href: "/admin/profile" },
 ];
 
 function NavLinkItem({ item, collapsed, onNavigate, activeTab, onSelectTab }) {
@@ -396,7 +398,7 @@ function NavContent({ collapsed, onToggleCollapse, onNavigate, activeTab, onSele
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
             <Link
-              href="/dashboard/profile"
+              href={isAdminView ? "/admin/profile" : "/dashboard/profile"}
               onClick={onNavigate}
               title={`${user?.name || "Member"} (${user?.role || "user"})`}
               className="relative w-9 h-9 rounded-full overflow-hidden ring-2 ring-slate-200 dark:ring-white/10 hover:ring-[#9ae600] transition-all group shrink-0"
@@ -426,7 +428,7 @@ function NavContent({ collapsed, onToggleCollapse, onNavigate, activeTab, onSele
           <div className="space-y-2">
             {/* User Capsule */}
             <Link
-              href="/dashboard/profile"
+              href={isAdminView ? "/admin/profile" : "/dashboard/profile"}
               onClick={onNavigate}
               className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-100/80 dark:hover:bg-white/[0.06] transition-colors group cursor-pointer"
             >

@@ -66,7 +66,7 @@ export default function ProfilePage() {
             {/* Quick Actions */}
             <div className="flex sm:flex-col items-center gap-2.5 shrink-0">
               <Link
-                href="/dashboard/profile"
+                href={isAdmin ? "/admin/profile" : "/dashboard/profile"}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white transition-colors"
               >
                 <Edit3 className="w-3.5 h-3.5 text-[#72a800] dark:text-[#9ae600]" />
@@ -98,14 +98,16 @@ export default function ProfilePage() {
         {/* Dashboard & Reports Directory Quick Links */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <Link
-            href="/dashboard"
+            href={isAdmin ? "/admin" : "/dashboard"}
             className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-[#9ae600]/50 transition-all shadow-sm group"
           >
             <h3 className="text-base font-bold font-heading text-slate-950 dark:text-white group-hover:text-[#72a800] dark:group-hover:text-[#9ae600] transition-colors">
-              Analytics &amp; Console Dashboard
+              {isAdmin ? "Admin Control Center" : "Analytics & Console Dashboard"}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              View recovery statistics, status breakdowns, and administrative telemetry.
+              {isAdmin
+                ? "Manage reports, reviews, user privileges, and fraud telemetry."
+                : "View recovery statistics, status breakdowns, and personal telemetry."}
             </p>
           </Link>
 
