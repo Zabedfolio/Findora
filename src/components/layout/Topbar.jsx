@@ -134,7 +134,7 @@ export default function Topbar({
             </button>
           ) : (
             <Link
-              href="/dashboard?tab=profile"
+              href={user?.role === "admin" ? "/admin/profile" : "/dashboard?tab=profile"}
               title="View Profile & Settings"
               className="relative ml-0.5 hidden h-10 w-10 overflow-hidden rounded-full ring-2 ring-slate-200 dark:ring-slate-700 hover:ring-[#9ae600] transition-all hover:scale-105 sm:block"
             >
