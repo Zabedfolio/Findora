@@ -21,6 +21,7 @@ import {
   MessageSquareWarning,
   Flame,
   Activity,
+  FileCheck,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import useAuth from "@/hooks/useAuth";
@@ -29,7 +30,8 @@ import useAuth from "@/hooks/useAuth";
 const NAV_USER_MAIN = [
   { id: "overview", tabKey: "overview", icon: LayoutDashboard, label: "Overview & Analytics", href: "/dashboard" },
   { id: "reports", tabKey: "reports", icon: FileText, label: "My Reports", href: "/dashboard/my-reports" },
-  { id: "claims", tabKey: "claims", icon: Handshake, label: "Claims & Verification", href: "/dashboard/claims" },
+  { id: "claims", tabKey: "claims", icon: FileCheck, label: "Claims & Verification", href: "/dashboard/claims" },
+  { id: "handovers", icon: Handshake, label: "Safe Handovers", href: "/dashboard/handovers" },
 ];
 
 const NAV_USER_COMMUNITY = [

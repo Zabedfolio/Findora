@@ -57,6 +57,12 @@ function DashboardLayoutContent({ children }) {
     if (pathname?.startsWith("/admin")) {
       return { title: "Admin Overview & Telemetry", section: "Control Center", badge: "ADMIN PRIVILEGES" };
     }
+    if (pathname?.includes("/dashboard/handovers")) {
+      return { title: "Handovers & Return Meetings", section: "Safe Exchange", badge: "ACTIVE" };
+    }
+    if (pathname?.includes("/dashboard/claims")) {
+      return { title: "Claims & Ownership Verification", section: "Claims Hub", badge: "ACTIVE" };
+    }
     if (pathname?.includes("/dashboard/my-reports")) {
       return { title: "My Reports Hub", section: "Workspace", badge: "ACTIVE" };
     }
