@@ -41,7 +41,7 @@ function ReportDetailsContent() {
     if (user) {
       wasLoggedInRef.current = true;
     }
-  }, [user]);
+  }, [Boolean(user)]);
 
   // If user logs out while on the report details page, automatically navigate to login with redirect
   React.useEffect(() => {
@@ -70,7 +70,7 @@ function ReportDetailsContent() {
       window.removeEventListener("findora_user_logged_out", handleLogout);
       window.removeEventListener("storage", handleStorage);
     };
-  }, [user, authLoading, id]);
+  }, [Boolean(user), authLoading, id]);
 
   // Fetch single report by ID using React Query
   const {

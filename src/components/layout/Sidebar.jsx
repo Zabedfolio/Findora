@@ -48,6 +48,7 @@ const NAV_USER_SECONDARY = [
 const NAV_ADMIN_MAIN = [
   { id: "admin-overview", icon: LayoutDashboard, label: "Overview & Metrics", href: "/admin" },
   { id: "admin-reports", icon: FileText, label: "Manage Reports", href: "/admin/reports", badge: "Listings" },
+  { id: "admin-handovers", icon: Handshake, label: "Handover Oversight", href: "/admin/handovers", badge: "Live" },
   { id: "admin-reviews", icon: MessageSquareWarning, label: "Review Moderation", href: "/admin/reviews", badge: "Mod" },
   { id: "admin-fraud", icon: ShieldAlert, label: "Fraud & Abuse", href: "/admin/fraud", badge: "Alerts" },
   { id: "admin-users", icon: Users, label: "User Management", href: "/admin/users", badge: "Staff" },

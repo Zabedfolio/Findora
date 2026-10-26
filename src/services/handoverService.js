@@ -43,6 +43,8 @@ const INITIAL_DEMO_HANDOVERS = [
         action: "Proposed handover at Dhanmondi Police Station",
       },
     ],
+    adminWarnings: [],
+    suspiciousFlags: [],
     createdAt: "2026-10-26T10:00:00Z",
     updatedAt: "2026-10-26T10:00:00Z",
   },
@@ -76,7 +78,7 @@ const INITIAL_DEMO_HANDOVERS = [
     status: "confirmed",
     confirmations: {
       ownerConfirmed: true,
-      finderConfirmed: true,
+      finderConfirmed: false,
     },
     history: [
       {
@@ -89,9 +91,65 @@ const INITIAL_DEMO_HANDOVERS = [
         by: "Sarah Jenkins",
         action: "Accepted meeting proposal",
       },
+      {
+        at: "2026-10-26T09:00:00Z",
+        by: "Rahim Chowdhury",
+        action: "Signed recipient confirmation (1/2)",
+      },
     ],
+    adminWarnings: [],
+    suspiciousFlags: [],
     createdAt: "2026-10-25T14:30:00Z",
-    updatedAt: "2026-10-25T15:10:00Z",
+    updatedAt: "2026-10-26T09:00:00Z",
+  },
+  {
+    _id: "hnd_004",
+    claimId: "clm_104",
+    reportId: "rep_lost_04",
+    itemTitle: "Gold Chain with Diamond Pendant",
+    itemCategory: "Jewelry & Watches",
+    itemThumbnail: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=400&q=80",
+    owner: {
+      id: "usr_owner_04",
+      name: "Mst. Farhana Yasmin",
+      email: "farhana@gmail.com",
+      phone: "+880 1811-223344",
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150",
+      role: "owner",
+    },
+    finder: {
+      id: "usr_finder_04",
+      name: "Tanvir Hasan",
+      email: "tanvir.h@yahoo.com",
+      phone: "+880 1622-778899",
+      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150",
+      role: "finder",
+    },
+    proposedBy: "finder",
+    meetingDate: "2026-10-31",
+    timeSlot: "11:45 PM - 12:30 AM",
+    location: "Behind Old Bus Depot, Dark Alley Way",
+    safetyNote: "Come alone without phone or police.",
+    status: "proposed",
+    confirmations: {
+      ownerConfirmed: false,
+      finderConfirmed: true,
+    },
+    history: [
+      {
+        at: "2026-10-26T18:00:00Z",
+        by: "Tanvir Hasan",
+        action: "Proposed suspicious night exchange at isolated location",
+      },
+    ],
+    suspiciousFlags: [
+      "Late night meeting (11:45 PM)",
+      "Isolated / unverified private location",
+      "High-value jewelry risk trigger",
+    ],
+    adminWarnings: [],
+    createdAt: "2026-10-26T18:00:00Z",
+    updatedAt: "2026-10-26T18:00:00Z",
   },
   {
     _id: "hnd_003",
@@ -132,6 +190,8 @@ const INITIAL_DEMO_HANDOVERS = [
     ],
     completedAt: "2026-10-24T12:05:00Z",
     ratingsUnlocked: true,
+    adminWarnings: [],
+    suspiciousFlags: [],
     createdAt: "2026-10-23T11:00:00Z",
     updatedAt: "2026-10-24T12:05:00Z",
   },
@@ -180,18 +240,24 @@ export async function getHandovers(filter = "all") {
   const past = all.filter(
     (h) => h.status === "completed" || h.status === "reunited"
   );
+  const suspicious = all.filter(
+    (h) => (h.suspiciousFlags && h.suspiciousFlags.length > 0) || h.hasWarning
+  );
 
   let filtered = all;
   if (filter === "upcoming") {
     filtered = upcoming;
   } else if (filter === "past" || filter === "completed") {
     filtered = past;
+  } else if (filter === "suspicious") {
+    filtered = suspicious;
   }
 
   return {
     all: filtered,
     upcoming,
     past,
+    suspicious,
     counts: {
       all: all.length,
       upcoming: upcoming.length,
@@ -199,6 +265,7 @@ export async function getHandovers(filter = "all") {
       proposed: all.filter((h) => h.status === "proposed").length,
       confirmed: all.filter((h) => h.status === "confirmed").length,
       completed: past.length,
+      suspicious: suspicious.length,
     },
   };
 }
@@ -212,7 +279,7 @@ export async function getHandoverById(id) {
 }
 
 /**
- * Create a new handover proposal from an approved claim
+ * Create a new handover proposal
  */
 export async function createHandoverProposal({
   claimId,
@@ -229,6 +296,17 @@ export async function createHandoverProposal({
   finder,
 }) {
   const all = getStore();
+
+  // Basic auto safety heuristic to assist admin monitoring
+  const suspiciousFlags = [];
+  const locLower = (location || "").toLowerCase();
+  const timeLower = (timeSlot || "").toLowerCase();
+  if (locLower.includes("alley") || locLower.includes("depot") || locLower.includes("home") || locLower.includes("apartment")) {
+    suspiciousFlags.push("Non-public or isolated venue detected");
+  }
+  if (timeLower.includes("11:") || timeLower.includes("12:") || timeLower.includes("01:") || timeLower.includes("night") || timeLower.includes("midnight")) {
+    suspiciousFlags.push("Late night exchange scheduled");
+  }
 
   const newHandover = {
     _id: `hnd_${Date.now()}`,
@@ -266,6 +344,8 @@ export async function createHandoverProposal({
         action: `Proposed safe handover meeting at ${location}`,
       },
     ],
+    suspiciousFlags,
+    adminWarnings: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -276,7 +356,8 @@ export async function createHandoverProposal({
 }
 
 /**
- * Accept a proposed handover meeting
+ * AUTO-APPROVAL: Accept a proposed handover meeting.
+ * No admin approval needed. When either party clicks accept, it auto-confirms!
  */
 export async function acceptHandoverProposal(id, recipientRole = "owner") {
   const all = getStore();
@@ -289,16 +370,12 @@ export async function acceptHandoverProposal(id, recipientRole = "owner") {
   const updated = {
     ...existing,
     status: "confirmed",
-    confirmations: {
-      ownerConfirmed: true,
-      finderConfirmed: true,
-    },
     history: [
       ...(existing.history || []),
       {
         at: new Date().toISOString(),
-        by: recipientRole === "finder" ? "Finder" : "Owner",
-        action: "Accepted proposed meeting location & time slot",
+        by: recipientRole === "finder" ? "Finder" : "Owner / Recipient",
+        action: "Auto-approved & confirmed handover meeting schedule",
       },
     ],
     updatedAt: new Date().toISOString(),
@@ -351,9 +428,9 @@ export async function suggestAlternativeProposal(
 }
 
 /**
- * Mark as Reunited & Completed (with two-party confirmation).
- * Once fully completed, automatically transitions the report status to Resolved
- * and unlocks Phase 7 ratings.
+ * TWO-PARTY CONFIRMATION:
+ * Completes automatically when finder AND receiver both click confirm!
+ * No admin approval required. Automatically resolves report and unlocks Phase 7 ratings.
  */
 export async function completeHandover(id, partyRole = "owner") {
   const all = getStore();
@@ -370,14 +447,21 @@ export async function completeHandover(id, partyRole = "owner") {
 
   const newConfirmations = {
     ...prevConfirmations,
-    ...(partyRole === "owner" ? { ownerConfirmed: true } : {}),
-    ...(partyRole === "finder" ? { finderConfirmed: true } : {}),
-    ...(partyRole === "both" ? { ownerConfirmed: true, finderConfirmed: true } : {}),
+    ...(partyRole === "owner" ? { ownerConfirmed: true, ownerConfirmedAt: new Date().toISOString() } : {}),
+    ...(partyRole === "finder" ? { finderConfirmed: true, finderConfirmedAt: new Date().toISOString() } : {}),
+    ...(partyRole === "both"
+      ? {
+          ownerConfirmed: true,
+          finderConfirmed: true,
+          ownerConfirmedAt: new Date().toISOString(),
+          finderConfirmedAt: new Date().toISOString(),
+        }
+      : {}),
   };
 
-  // If both parties confirmed, or forced by "both" confirmation
+  // Both finder and receiver must confirm
   const isFullyCompleted =
-    newConfirmations.ownerConfirmed && newConfirmations.finderConfirmed;
+    Boolean(newConfirmations.ownerConfirmed) && Boolean(newConfirmations.finderConfirmed);
 
   const newStatus = isFullyCompleted ? "completed" : "confirmed";
 
@@ -391,10 +475,10 @@ export async function completeHandover(id, partyRole = "owner") {
       ...(existing.history || []),
       {
         at: new Date().toISOString(),
-        by: partyRole === "both" ? "Both Parties" : partyRole === "finder" ? "Finder" : "Owner",
+        by: partyRole === "both" ? "Both Parties" : partyRole === "finder" ? "Finder" : "Receiver / Owner",
         action: isFullyCompleted
-          ? "Confirmed physical exchange! Item marked as Reunited & Completed."
-          : `Signed handover confirmation (${partyRole}). Waiting for counterparty confirmation.`,
+          ? "Both parties signed off! Handover auto-approved & completed."
+          : `Signed delivery confirmation (${partyRole === "finder" ? "Finder" : "Receiver"}). Awaiting counterparty confirmation.`,
       },
     ],
     updatedAt: new Date().toISOString(),
@@ -416,4 +500,54 @@ export async function completeHandover(id, partyRole = "owner") {
     handover: updated,
     isFullyCompleted,
   };
+}
+
+/**
+ * ADMIN SUPERVISION:
+ * If admin sees anything suspicious, he can warn finder and receiver SEPARATELY.
+ *
+ * @param {string} id - Handover ID
+ * @param {Object} options
+ * @param {'finder' | 'receiver' | 'both'} options.target - Whom to warn
+ * @param {string} options.title - Short alert headline
+ * @param {string} options.message - Detailed warning instruction
+ * @param {string} [options.severity='high'] - 'warning' | 'high' | 'critical'
+ */
+export async function sendAdminWarning(id, { target = "finder", title, message, severity = "high" }) {
+  const all = getStore();
+  const index = all.findIndex((h) => h._id === id || h.id === id);
+  if (index === -1) {
+    throw new Error("Handover record not found.");
+  }
+
+  const existing = all[index];
+  const newWarning = {
+    id: `wrn_${Date.now()}`,
+    target, // 'finder' | 'receiver' | 'both'
+    title: title || "Security Warning from Findora Trust Team",
+    message:
+      message ||
+      "Suspicious location or schedule detected. Do not meet in secluded areas or send money in advance.",
+    severity,
+    sentAt: new Date().toISOString(),
+  };
+
+  const updated = {
+    ...existing,
+    hasWarning: true,
+    adminWarnings: [newWarning, ...(existing.adminWarnings || [])],
+    history: [
+      ...(existing.history || []),
+      {
+        at: new Date().toISOString(),
+        by: "Findora Trust Admin",
+        action: `Issued safety warning to ${target.toUpperCase()}: "${newWarning.title}"`,
+      },
+    ],
+    updatedAt: new Date().toISOString(),
+  };
+
+  all[index] = updated;
+  saveStore(all);
+  return { handover: updated, warning: newWarning };
 }

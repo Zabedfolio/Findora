@@ -15,7 +15,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   X,
-  Sparkles as SparklesDisabled, // not used
   Info,
 } from "lucide-react";
 import toast from "@/lib/toast";

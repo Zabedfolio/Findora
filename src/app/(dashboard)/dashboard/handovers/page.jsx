@@ -14,7 +14,6 @@ import {
   Filter,
   PackageCheck,
   RotateCcw,
-  Sparkles as SparklesDisabled, // not used
   Star,
   X,
   FileCheck,

@@ -51,6 +51,9 @@ function DashboardLayoutContent({ children }) {
     if (pathname?.includes("/admin/users")) {
       return { title: "User Directory & Access Control", section: "User Management", badge: "ADMIN PRIVILEGES" };
     }
+    if (pathname?.includes("/admin/handovers")) {
+      return { title: "Handover Oversight & Safety Monitor", section: "Trust & Safety", badge: "ADMIN PRIVILEGES" };
+    }
     if (pathname?.includes("/admin/profile")) {
       return { title: "Admin Profile & Settings", section: "Admin Account", badge: "ADMIN PRIVILEGES" };
     }

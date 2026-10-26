@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import toast from "@/lib/toast";
@@ -51,7 +51,19 @@ export function useAuth() {
       const stored = localStorage.getItem("findora_demo_user");
       if (stored) {
         const parsed = JSON.parse(stored);
-        setDemoUser(parsed);
+        setDemoUser((prev) => {
+          if (
+            prev &&
+            prev.id === parsed.id &&
+            prev.email === parsed.email &&
+            prev.role === parsed.role &&
+            prev.image === parsed.image &&
+            prev.name === parsed.name
+          ) {
+            return prev;
+          }
+          return parsed;
+        });
         syncAuthCookies(parsed);
       } else {
         // Default initial session for local developer workspace
@@ -64,7 +76,10 @@ export function useAuth() {
           role: "admin",
         };
         localStorage.setItem("findora_demo_user", JSON.stringify(defaultDevUser));
-        setDemoUser(defaultDevUser);
+        setDemoUser((prev) => {
+          if (prev && prev.id === defaultDevUser.id && prev.email === defaultDevUser.email) return prev;
+          return defaultDevUser;
+        });
         syncAuthCookies(defaultDevUser);
       }
     } catch {
@@ -85,11 +100,14 @@ export function useAuth() {
 
   const [dbRole, setDbRole] = useState(null);
   const [dbImage, setDbImage] = useState(null);
+  const lastFetchedEmailRef = useRef(null);
 
   // Synchronize role and avatar image directly from MongoDB database
   useEffect(() => {
     const targetEmail = sessionData?.user?.email || demoUser?.email;
     if (!targetEmail) return;
+    if (lastFetchedEmailRef.current === targetEmail && dbRole) return;
+    lastFetchedEmailRef.current = targetEmail;
 
     let isMounted = true;
     fetch(`/api/user/role?email=${encodeURIComponent(targetEmail)}`)
@@ -97,12 +115,14 @@ export function useAuth() {
       .then((data) => {
         if (isMounted && data?.success) {
           if (data?.role) {
-            setDbRole(data.role);
+            setDbRole((prev) => (prev !== data.role ? data.role : prev));
             if (typeof document !== "undefined") {
               document.cookie = `findora_role=${data.role}; path=/; max-age=604800; SameSite=Lax`;
             }
           }
-          if (data?.user?.image) setDbImage(data.user.image);
+          if (data?.user?.image) {
+            setDbImage((prev) => (prev !== data.user.image ? data.user.image : prev));
+          }
         }
       })
       .catch((err) => {
@@ -112,7 +132,7 @@ export function useAuth() {
     return () => {
       isMounted = false;
     };
-  }, [sessionData?.user?.email, demoUser?.email]);
+  }, [sessionData?.user?.email, demoUser?.email, dbRole]);
 
   const isLoggedOut =
     typeof window !== "undefined" &&
@@ -122,27 +142,39 @@ export function useAuth() {
     ? null
     : sessionData?.user || demoUser || null;
 
-  // User object guaranteed to have real role and ImgBB avatar from MongoDB
-  const user = rawUser
-    ? {
-        ...rawUser,
-        role: dbRole || rawUser?.role || "user",
-        image: dbImage || rawUser?.image || "/default-avatar.png",
-      }
-    : null;
+  // Memoize user object with stable reference based on primitives to stop infinite re-render cascades
+  const user = useMemo(() => {
+    if (isLoggedOut || !rawUser) return null;
+    return {
+      ...rawUser,
+      role: dbRole || rawUser?.role || "user",
+      image: dbImage || rawUser?.image || "/default-avatar.png",
+    };
+  }, [
+    isLoggedOut,
+    rawUser?.id,
+    rawUser?._id,
+    rawUser?.name,
+    rawUser?.email,
+    rawUser?.phone,
+    rawUser?.role,
+    rawUser?.image,
+    dbRole,
+    dbImage,
+  ]);
 
-  const session = user
-    ? sessionData?.session || { id: "demo-session" }
-    : null;
+  const session = useMemo(() => {
+    if (!user) return null;
+    return sessionData?.session || { id: "demo-session" };
+  }, [user, sessionData?.session]);
 
   // Hydration + Better-auth session query loading state
   const loading = isPending || !authHydrated;
 
   // Check if current user has administrator privileges
-  const isAdmin = Boolean(
-    user?.role === "admin" ||
-    user?.isAdmin === true
-  );
+  const isAdmin = useMemo(() => {
+    return Boolean(user?.role === "admin" || user?.isAdmin === true);
+  }, [user?.role, user?.isAdmin]);
 
   /**
    * Quick demo login for role testing (admin vs regular member)
