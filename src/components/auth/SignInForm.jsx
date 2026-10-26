@@ -124,7 +124,7 @@ function SignInFormContent() {
     });
     setTimeout(() => {
       toast.success(`Successfully authenticated with ${provider}!`);
-      router.push("/reports");
+      router.push("/dashboard");
     }, 1000);
   };
 
