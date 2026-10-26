@@ -36,6 +36,7 @@ import LocationList from "@/components/dashboard/LocationList";
 import CategoryBars from "@/components/dashboard/BarChart";
 import ProfileView from "@/components/dashboard/ProfileView";
 import ClaimsView from "@/components/dashboard/ClaimsView";
+import useAuth from "@/hooks/useAuth";
 
 const delta = (cur = 0, prev = 0) => {
   const c = Number(cur) || 0;
@@ -68,6 +69,7 @@ const QUICK_WORKSPACES = [
 ];
 
 function DashboardContent() {
+  const { isAdmin } = useAuth();
   const [range, setRange] = useState("12m");
   const [segment, setSegment] = useState("all");
   const [location, setLocation] = useState("all");
@@ -154,6 +156,37 @@ function DashboardContent() {
 
   return (
     <div className="space-y-6">
+      {/* Administrator Preview Notification Banner */}
+      {isAdmin && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-900 dark:text-emerald-200 shadow-xs">
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
+              🛡️
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-xs sm:text-sm font-bold">
+                  Viewing Community Workspace as Administrator
+                </p>
+                <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                  Preview Mode
+                </span>
+              </div>
+              <p className="text-[11.5px] text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">
+                You are currently viewing the regular member dashboard. All administrative controls, reviews, and fraud moderation tools are located in the Admin Control Center.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs shrink-0 whitespace-nowrap"
+          >
+            <span>Go to Admin Control Center</span>
+            <ArrowUpRight size={14} />
+          </Link>
+        </div>
+      )}
+
       {/* TAB 1: PROFILE & SETTINGS (In-Dashboard View) */}
           {activeTab === "profile" && <ProfileView />}
 

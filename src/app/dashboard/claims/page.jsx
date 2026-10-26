@@ -29,7 +29,6 @@ import {
     Info,
     Lock,
     PackageCheck,
-    Sparkles,
     MessageSquare,
     HelpCircle,
     X,
