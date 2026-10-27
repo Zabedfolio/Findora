@@ -56,6 +56,7 @@ function SignInFormContent() {
     setLoading(true);
 
     try {
+      let authData = null;
       if (authClient?.signIn?.email) {
         const { data, error: authError } = await authClient.signIn.email({
           email: formData.email,
@@ -65,6 +66,7 @@ function SignInFormContent() {
         if (authError) {
           throw new Error(authError.message || "Invalid email or password");
         }
+        authData = data;
       } else {
         await new Promise((resolve) => setTimeout(resolve, 850));
       }
@@ -77,7 +79,7 @@ function SignInFormContent() {
 
       // Determine destination: honor explicit redirect or route based on role
       const isUserAdmin =
-        data?.user?.role === "admin" ||
+        authData?.user?.role === "admin" ||
         formData.email?.toLowerCase().includes("admin");
       const defaultDest = isUserAdmin ? "/admin" : "/dashboard";
       const destination =

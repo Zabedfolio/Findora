@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Handshake, HelpCircle, Check, Loader2, ShieldCheck, X, ShieldAlert, Lock } from "lucide-react";
 import toast from "@/lib/toast";
 import useAuth from "@/hooks/useAuth";
+import { createClaim, getMyClaims } from "@/services/claimService";
 
 /**
  * ClaimButton Component:
@@ -19,6 +20,24 @@ export default function ClaimButton({ report }) {
   const [claimProof, setClaimProof] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasClaimed, setHasClaimed] = useState(false);
+
+  // Check if current user already claimed this item
+  useEffect(() => {
+    if (!user || !report) return;
+    const reportId = String(report._id || report.id || "");
+    if (!reportId) return;
+
+    getMyClaims({ type: "outgoing" }, user).then((res) => {
+      if (res && res.claims) {
+        const alreadyClaimed = res.claims.some(
+          (c) => String(c.reportId) === reportId
+        );
+        if (alreadyClaimed) {
+          setHasClaimed(true);
+        }
+      }
+    }).catch(() => {});
+  }, [user, report]);
 
   if (!report) return null;
 
@@ -64,15 +83,49 @@ export default function ClaimButton({ report }) {
     }
 
     setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setIsSubmitting(false);
-    setHasClaimed(true);
-    setIsOpen(false);
-    toast.success(
-      isFound
-        ? "Claim request submitted! The finder has been notified."
-        : "Match alert sent! The owner has been notified."
-    );
+    try {
+      const loc =
+        report.location?.city ||
+        report.location?.area ||
+        report.location?.address ||
+        (typeof report.location === "string" ? report.location : "Dhaka");
+
+      await createClaim({
+        reportId: report._id || report.id,
+        itemTitle: report.title || "Found Item",
+        itemThumbnail: report.images?.[0] || report.thumbnail || "",
+        category: report.category || "General",
+        location: loc,
+        claimant: {
+          id: user.id || user._id,
+          name: user.name || "Claimant",
+          email: user.email,
+          avatar: user.avatar || user.image || "",
+        },
+        finder: {
+          id: report.postedBy?.id || report.postedBy?._id || report.contact?.email || report.user?.id || report.user?._id || "finder",
+          name: report.postedBy?.name || report.contact?.name || report.user?.name || "Item Finder",
+          email: report.postedBy?.email || report.contact?.email || report.user?.email || "finder@findora.app",
+          phone: report.contact?.phone || "",
+          avatar: report.postedBy?.avatar || report.user?.avatar || "",
+        },
+        proofText: claimProof.trim(),
+      });
+
+      setHasClaimed(true);
+      setIsOpen(false);
+      setClaimProof("");
+      toast.success(
+        isFound
+          ? "Claim request submitted! It now appears in your dashboard."
+          : "Match alert sent! The owner has been notified."
+      );
+    } catch (err) {
+      console.error("Error creating claim:", err);
+      toast.error("Could not submit claim. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

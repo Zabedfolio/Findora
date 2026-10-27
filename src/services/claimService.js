@@ -1,9 +1,9 @@
-import { demoClaims } from "@/demo-data";
+import { createHandoverProposal } from "./handoverService";
 
 const LOCAL_STORAGE_KEY = "findora_user_claims_store";
 
 /**
- * Helper to retrieve stored claims or initialize from demo claims
+ * Helper to retrieve stored claims from localStorage
  */
 function getStoredClaims() {
   if (typeof window === "undefined") {
@@ -35,19 +35,116 @@ function saveStoredClaims(claims) {
 }
 
 /**
- * Fetch all claims submitted by the current authenticated user/claimant.
- *
- * Tries the backend (NEXT_PUBLIC_API_URL/claims/mine) and falls back to
- * demo data, the same way reportService.js does.
+ * Create and persist a new ownership claim
+ */
+export async function createClaim({
+  reportId,
+  itemTitle,
+  itemThumbnail,
+  category,
+  location,
+  claimant,
+  finder,
+  proofText,
+  secretAnswers,
+}) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const response = await fetch(`${apiBase}/claims`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportId,
+          itemTitle,
+          itemThumbnail,
+          category,
+          location,
+          claimant,
+          finder,
+          proofText,
+          secretAnswers,
+        }),
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (e) {
+      console.warn("Backend API unreachable, saving claim to local store:", e.message);
+    }
+  }
+
+  const all = getStoredClaims();
+  const claimNum = `CLM-${Math.floor(100000 + Math.random() * 900000)}`;
+  const now = new Date();
+  const newClaim = {
+    id: `clm_${Date.now()}`,
+    claimNumber: claimNum,
+    reportId: reportId || `rep_${Date.now()}`,
+    itemTitle: itemTitle || "Reported Item",
+    category: category || "General",
+    itemType: "found",
+    claimedAt: now.toISOString(),
+    claimedDateFormatted: now.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }),
+    location: location || "Designated Safe Zone",
+    imageUrl:
+      itemThumbnail ||
+      "https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?auto=format&fit=crop&w=800&q=80",
+    status: "pending",
+    statusLabel: "Under Review",
+    statusDescription: "Finder is reviewing your submitted proof of ownership.",
+    claimant: claimant || {
+      id: "usr_current",
+      name: "Current User",
+      email: "user@findora.app",
+    },
+    finder: finder || {
+      id: "usr_finder",
+      name: "Item Finder",
+      email: "finder@findora.app",
+    },
+    claimantProof: {
+      description: proofText || "Submitted proof of ownership",
+      submittedAt: now.toISOString(),
+      secretAnswers: secretAnswers || [],
+    },
+    timeline: [
+      {
+        step: 1,
+        title: "Claim Submitted",
+        time: "Just now",
+        description: "Ownership proof submitted to the finder.",
+        completed: true,
+        current: true,
+      },
+    ],
+    handover: null,
+  };
+
+  const updated = [newClaim, ...all];
+  saveStoredClaims(updated);
+  return newClaim;
+}
+
+/**
+ * Fetch all claims submitted by or sent to the current authenticated user.
  *
  * @param {Object} [params]
- * @param {string} [params.status='all'] - 'all' | 'approved' | 'in_handover' | 'pending' | 'needs_info' | 'reunited' | 'rejected'
- * @param {string} [params.q=''] - Search query by item title, claimNumber, location, finder name
- * @param {string} [params.category] - Category filter
+ * @param {string} [params.status='all']
+ * @param {string} [params.type='all'] - 'all' | 'outgoing' | 'incoming'
+ * @param {string} [params.q='']
+ * @param {string} [params.category]
  * @param {'newest' | 'oldest'} [params.sort='newest']
+ * @param {Object} [currentUser] - Authenticated user object
  * @returns {Promise<{ claims: Array, counts: Object }>}
  */
-export async function getMyClaims(params = {}) {
+export async function getMyClaims(params = {}, currentUser = null) {
   const apiBase = process.env.NEXT_PUBLIC_API_URL;
   if (apiBase) {
     try {
@@ -62,13 +159,54 @@ export async function getMyClaims(params = {}) {
         return await response.json();
       }
     } catch (e) {
-      console.warn("Backend claims API unreachable, falling back to local demo claims:", e.message);
+      console.warn("Backend claims API unreachable, falling back to local claims:", e.message);
     }
   }
 
-  // Fallback to local demo dataset
-  const { status = "all", q = "", category = "", sort = "newest" } = params;
+  // Fallback to local claims store
+  const { status = "all", q = "", category = "", sort = "newest", type = "all" } = params;
   let allClaims = getStoredClaims();
+
+  // If currentUser is not provided, return empty
+  if (!currentUser) {
+    return {
+      claims: [],
+      counts: {
+        all: 0,
+        in_handover: 0,
+        pending: 0,
+        needs_info: 0,
+        reunited: 0,
+        rejected: 0,
+      },
+    };
+  }
+
+  const currentUserId = String(currentUser.id || currentUser._id || "").toLowerCase();
+  const currentUserEmail = String(currentUser.email || "").toLowerCase();
+
+  // Strictly filter by current user
+  allClaims = allClaims.filter((c) => {
+    const claimantId = String(c.claimant?.id || c.claimant?._id || "").toLowerCase();
+    const claimantEmail = String(c.claimant?.email || "").toLowerCase();
+    const finderId = String(c.finder?.id || c.finder?._id || "").toLowerCase();
+    const finderEmail = String(c.finder?.email || "").toLowerCase();
+
+    const isClaimant =
+      (currentUserId && claimantId === currentUserId) ||
+      (currentUserEmail && claimantEmail === currentUserEmail);
+    const isFinder =
+      (currentUserId && finderId === currentUserId) ||
+      (currentUserEmail && finderEmail === currentUserEmail);
+
+    if (type === "outgoing") {
+      return isClaimant;
+    }
+    if (type === "incoming") {
+      return isFinder;
+    }
+    return isClaimant || isFinder;
+  });
 
   // Pre-calculate status counts for tabs
   const counts = {
@@ -329,6 +467,27 @@ export async function approveClaim(id, note = "") {
     };
     all[index] = updated;
     saveStoredClaims(all);
+
+    // Auto-create safe handover proposal for the claim so both parties see it in /dashboard/handovers
+    try {
+      await createHandoverProposal({
+        claimId: claim.id,
+        reportId: claim.reportId,
+        itemTitle: claim.itemTitle,
+        itemCategory: claim.category,
+        itemThumbnail: claim.imageUrl,
+        meetingDate: new Date(Date.now() + 86400000 * 2).toISOString().split("T")[0],
+        timeSlot: "Afternoon (03:30 PM - 05:00 PM)",
+        location: claim.location || "Local Police Station / Designated Safe Zone",
+        safetyNote: note || "Meet inside public reception under security supervision.",
+        proposedBy: "finder",
+        owner: claim.claimant,
+        finder: claim.finder,
+      });
+    } catch (e) {
+      console.warn("Could not auto-create handover proposal from claim:", e);
+    }
+
     return updated;
   }
   return null;

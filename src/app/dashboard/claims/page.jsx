@@ -40,6 +40,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
 import ReportAbuseModal from "@/components/claims/ReportAbuseModal";
 import toast from "@/lib/toast";
+import useAuth from "@/hooks/useAuth";
 import {
     getMyClaims as serviceGetMyClaims,
     markClaimReunited,
@@ -48,7 +49,7 @@ import {
 } from "@/services/claimService";
 
 // Data layer                                                      
-async function fetchMyClaims(params = {}) {
+async function fetchMyClaims(params = {}, user = null) {
     const apiBase = process.env.NEXT_PUBLIC_API_URL;
     if (apiBase) {
         try {
@@ -63,12 +64,12 @@ async function fetchMyClaims(params = {}) {
                 return await response.json();
             }
         } catch (e) {
-            console.warn("Backend /claims/mine unreachable, falling back to local demo dataset:", e.message);
+            console.warn("Backend /claims/mine unreachable, falling back to local dataset:", e.message);
         }
     }
 
-    // Fallback seamlessly to local demo dataset and claimService
-    return await serviceGetMyClaims(params);
+    // Filter dynamically by the authenticated user
+    return await serviceGetMyClaims(params, user);
 }
 
 // Status definitions and design tokens
@@ -142,6 +143,7 @@ function ClaimantClaimsContent() {
     const searchParams = useSearchParams();
     const initialClaimId = searchParams.get("id");
     const initialView = searchParams.get("view");
+    const { user } = useAuth();
 
     const [light, setLight] = useState(true);
     const [menuOpen, setMenuOpen] = useState(false);
@@ -181,6 +183,20 @@ function ClaimantClaimsContent() {
 
     // Load claims data
     const loadClaimsData = useCallback(async () => {
+        if (!user) {
+            setClaims([]);
+            setCounts({
+                all: 0,
+                in_handover: 0,
+                pending: 0,
+                needs_info: 0,
+                reunited: 0,
+                rejected: 0,
+            });
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
             const res = await fetchMyClaims({
@@ -188,7 +204,7 @@ function ClaimantClaimsContent() {
                 q: searchQuery,
                 category: selectedCategory,
                 sort: sortOrder,
-            });
+            }, user);
             if (res && res.claims) {
                 setClaims(res.claims);
                 if (res.counts) setCounts(res.counts);
@@ -207,7 +223,7 @@ function ClaimantClaimsContent() {
         } finally {
             setLoading(false);
         }
-    }, [activeTab, searchQuery, selectedCategory, sortOrder, initialClaimId, initialView]);
+    }, [activeTab, searchQuery, selectedCategory, sortOrder, initialClaimId, initialView, user]);
 
     useEffect(() => {
         loadClaimsData();

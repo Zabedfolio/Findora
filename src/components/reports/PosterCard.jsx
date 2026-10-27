@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
   User as UserIcon,
   Phone,
@@ -8,6 +9,7 @@ import {
   ShieldCheck,
   CheckCircle,
   MessageSquare,
+  ChevronRight,
 } from "lucide-react";
 import toast from "@/lib/toast";
 
@@ -25,6 +27,16 @@ export default function PosterCard({ report }) {
     image: "/default-avatar.png",
   };
 
+  const targetUserId =
+    report?.postedBy?.userId ||
+    owner.userId ||
+    owner.id ||
+    owner._id ||
+    owner.email ||
+    "";
+
+  const profileHref = targetUserId ? `/users/${targetUserId}` : "#";
+
   const avatarSrc = owner.image?.trim() ? owner.image : "/default-avatar.png";
 
   const handleMessage = () => {
@@ -33,16 +45,24 @@ export default function PosterCard({ report }) {
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm">
-      <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
+      <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
         <span>Reported By</span>
+        <span className="text-[11px] font-medium lowercase text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+          public profile
+        </span>
       </div>
 
-      <div className="flex items-center gap-3.5 mb-4">
-        <div className="relative w-12 h-12 rounded-2xl overflow-hidden ring-2 ring-slate-200 dark:ring-slate-700 shadow-xs shrink-0">
+      {/* Clickable Profile Card */}
+      <Link
+        href={profileHref}
+        className="group flex items-center gap-3.5 mb-4 p-2.5 -mx-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent hover:border-slate-200/80 dark:hover:border-slate-700/80 transition-all cursor-pointer"
+        title="View public profile, trust badges & community reviews"
+      >
+        <div className="relative w-12 h-12 rounded-2xl overflow-hidden ring-2 ring-slate-200 dark:ring-slate-700 group-hover:ring-[#9ae600] shadow-xs shrink-0 transition-all">
           <img
             src={avatarSrc}
             alt={owner.name || "Poster"}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
               e.currentTarget.src = "/default-avatar.png";
             }}
@@ -51,7 +71,7 @@ export default function PosterCard({ report }) {
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <h4 className="text-base font-bold text-slate-950 dark:text-white truncate font-heading">
+            <h4 className="text-base font-bold text-slate-950 dark:text-white truncate font-heading group-hover:text-[#72ad00] dark:group-hover:text-[#9ae600] transition-colors">
               {owner.name || "Findora Member"}
             </h4>
             <ShieldCheck className="w-4 h-4 text-[#72ad00] dark:text-[#9ae600] shrink-0" title="Verified Member" />
@@ -64,7 +84,9 @@ export default function PosterCard({ report }) {
             </span>
           </div>
         </div>
-      </div>
+
+        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 group-hover:translate-x-0.5 transition-all shrink-0" />
+      </Link>
 
       {/* Contact Actions */}
       <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">

@@ -38,7 +38,7 @@ export default function AdminOverviewPage() {
       }
 
       // Also fetch live handovers
-      const hData = await getHandovers("all");
+      const hData = await getHandovers("all", null, true);
       setHandoverCount(hData?.all?.length || 0);
     } catch (err) {
       console.warn("Could not load backend admin metrics, using local store:", err);

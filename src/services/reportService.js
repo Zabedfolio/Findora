@@ -1,5 +1,3 @@
-import { lostReports, foundReports } from "@/demo-data";
-
 /**
  * All predefined categories for filtering
  */
@@ -75,42 +73,40 @@ export const getAllDemoReports = () => [];
  */
 export async function getReports(params = {}) {
   // Query live backend Express API
-  const apiBase = process.env.NEXT_PUBLIC_API_URL;
-  if (apiBase) {
-    try {
-      const searchParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, val]) => {
-        if (val !== undefined && val !== null && val !== "") {
-          searchParams.append(key, String(val));
-        }
-      });
-      const response = await fetch(`${apiBase}/items?${searchParams.toString()}`);
-      if (response.ok) {
-        const json = await response.json();
-        const rawItems = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
-        const normalized = rawItems.map(normalizeItem);
-
-        const typeCounts = {
-          all: normalized.length,
-          lost: normalized.filter((item) => item.type === "lost").length,
-          found: normalized.filter((item) => item.type === "found").length,
-        };
-
-        const page = Number(params.page) || 1;
-        const limit = Number(params.limit) || 9;
-        const totalReports = json.count || normalized.length;
-
-        return {
-          reports: normalized,
-          totalReports,
-          totalPages: Math.max(1, Math.ceil(totalReports / limit)),
-          currentPage: page,
-          typeCounts,
-        };
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  try {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== "") {
+        searchParams.append(key, String(val));
       }
-    } catch (e) {
-      console.warn("Backend API unreachable:", e.message);
+    });
+    const response = await fetch(`${apiBase}/items?${searchParams.toString()}`, { cache: "no-store" });
+    if (response.ok) {
+      const json = await response.json();
+      const rawItems = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+      const normalized = rawItems.map(normalizeItem);
+
+      const typeCounts = json.typeCounts || {
+        all: json.totalReports || normalized.length,
+        lost: normalized.filter((item) => item.type === "lost").length,
+        found: normalized.filter((item) => item.type === "found").length,
+      };
+
+      const page = Number(params.page) || json.currentPage || 1;
+      const limit = Number(params.limit) || 9;
+      const totalReports = json.totalReports ?? json.count ?? normalized.length;
+
+      return {
+        reports: normalized,
+        totalReports,
+        totalPages: json.totalPages || Math.max(1, Math.ceil(totalReports / limit)),
+        currentPage: page,
+        typeCounts,
+      };
     }
+  } catch (e) {
+    console.warn("Backend API unreachable, checking local items:", e.message);
   }
 
   // Local filtering & pagination implementation

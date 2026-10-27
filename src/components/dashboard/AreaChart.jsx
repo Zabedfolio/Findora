@@ -33,7 +33,7 @@ function niceMax(v) {
   return nice * p;
 }
 
-export default function AreaChart({ labels, lost, found, segment, delay = 0 }) {
+export default function AreaChart({ labels = [], lost = [], found = [], segment, delay = 0 }) {
   const [ref, { width }] = useMeasure();
   const [hover, setHover] = useState(null);
 

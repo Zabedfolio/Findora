@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import Link from "next/link";
 import {
   Handshake,
@@ -19,12 +19,14 @@ import {
   FileCheck,
 } from "lucide-react";
 import toast from "@/lib/toast";
+import useAuth from "@/hooks/useAuth";
 import HandoverCard from "@/components/handover/HandoverCard";
 import HandoverProposalForm from "@/components/handover/HandoverProposalForm";
 import ReviewForm from "@/components/reviews/ReviewForm";
 import { getHandovers } from "@/services/handoverService";
 
-export default function HandoversDashboardPage() {
+function HandoversDashboardContent() {
+  const { user } = useAuth();
   const [handovers, setHandovers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("upcoming"); // 'upcoming' | 'past' | 'all'
@@ -32,11 +34,16 @@ export default function HandoversDashboardPage() {
   const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
   const [reviewModalHandover, setReviewModalHandover] = useState(null);
 
-  // Fetch all handovers from the handoverService
-  const loadHandovers = async () => {
+  // Fetch handovers strictly for the authenticated user
+  const loadHandovers = useCallback(async () => {
+    if (!user) {
+      setHandovers([]);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
-      const data = await getHandovers("all");
+      const data = await getHandovers("all", user);
       setHandovers(data.all || []);
     } catch (err) {
       console.error("Failed to load handovers:", err);
@@ -44,11 +51,11 @@ export default function HandoversDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     loadHandovers();
-  }, []);
+  }, [loadHandovers]);
 
   // Filter handovers based on activeTab and searchQuery
   const filteredHandovers = useMemo(() => {
@@ -275,38 +282,56 @@ export default function HandoversDashboardPage() {
         </div>
       ) : filteredHandovers.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {filteredHandovers.map((item) => (
-            <HandoverCard
-              key={item._id || item.id}
-              handover={item}
-              onStatusChange={handleStatusChange}
-              onOpenReview={handleOpenReview}
-              currentRole="owner"
-            />
-          ))}
+          {filteredHandovers.map((item) => {
+            const isFinder =
+              (user?.id && (item.finder?.id === user.id || item.finder?.id === user._id)) ||
+              (user?.email && item.finder?.email?.toLowerCase() === user.email?.toLowerCase());
+            const role = isFinder ? "finder" : "owner";
+
+            return (
+              <HandoverCard
+                key={item._id || item.id}
+                handover={item}
+                onStatusChange={handleStatusChange}
+                onOpenReview={handleOpenReview}
+                currentRole={role}
+              />
+            );
+          })}
         </div>
       ) : (
-        <div className="p-12 text-center rounded-3xl bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-3">
-            <Handshake size={22} />
+        <div className="p-12 text-center rounded-3xl bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800 shadow-xs">
+          <div className="w-14 h-14 rounded-2xl bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600] flex items-center justify-center mx-auto mb-3">
+            <Handshake size={28} />
           </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">
-            No {activeTab === "upcoming" ? "upcoming" : activeTab === "past" ? "completed" : ""}{" "}
-            handovers found
+          <h3 className="text-base sm:text-lg font-bold font-heading text-slate-900 dark:text-white">
+            {handovers.length === 0
+              ? "No Safe Handovers Yet"
+              : `No ${activeTab === "upcoming" ? "upcoming" : activeTab === "past" ? "completed" : ""} handovers found`}
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-sm mx-auto leading-relaxed">
             {searchQuery
               ? "No handover meetings match your search query."
-              : "Handovers appear here automatically once an ownership claim is verified and authorized."}
+              : handovers.length === 0
+              ? "Safe handovers appear here automatically once an ownership claim is verified and accepted by both parties."
+              : "No exchanges currently match this filter tab."}
           </p>
-          <button
-            type="button"
-            onClick={() => setIsProposalModalOpen(true)}
-            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#9ae600] text-slate-950 font-bold text-xs shadow-xs"
-          >
-            <Plus size={14} />
-            <span>Propose Handover Meeting</span>
-          </button>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/dashboard?tab=claims"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 dark:hover:bg-white/5 transition-all"
+            >
+              <span>View Claims &amp; Verification</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsProposalModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#9ae600] hover:bg-[#88cc00] text-slate-950 font-bold text-xs shadow-xs transition-all cursor-pointer"
+            >
+              <Plus size={14} />
+              <span>Propose Handover Meeting</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -374,5 +399,13 @@ export default function HandoversDashboardPage() {
       </p>
 
     </div>
+  );
+}
+
+export default function HandoversDashboardPage() {
+  return (
+    <Suspense fallback={null}>
+      <HandoversDashboardContent />
+    </Suspense>
   );
 }
