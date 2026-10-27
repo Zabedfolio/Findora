@@ -1,5 +1,12 @@
 "use client";
 
+import {
+    getNotifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+    clearAllNotifications,
+} from "@/services/notificationService";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     getNotifications,
@@ -51,6 +58,16 @@ export function useNotifications({ pollMs = 30000 } = {}) {
         [refetch]
     );
 
+    const clearAll = useCallback(async () => {
+        setNotifications([]);
+        try {
+            await clearAllNotifications();
+        } catch (err) {
+            setError(err);
+            refetch();
+        }
+    }, [refetch]);
+
     const markAllAsRead = useCallback(async () => {
         setNotifications((list) => list.map((n) => ({ ...n, isRead: true })));
         try {
@@ -74,6 +91,7 @@ export function useNotifications({ pollMs = 30000 } = {}) {
         refetch,
         markAsRead,
         markAllAsRead,
+        clearAll,
     };
 }
 
