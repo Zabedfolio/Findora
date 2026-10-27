@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { CheckCircle2, Send, LoaderCircle } from "lucide-react";
-import StarRating from "@/components/ui/StarRating";
+import StarRating from "./StarRating";
 
 const MIN_COMMENT = 10;
 const MAX_COMMENT = 500;
@@ -29,6 +29,7 @@ function getInitials(name) {
 export default function ReviewForm({
     reviewee,
     reportId,
+    handoverId,
     onSubmit,
     onSuccess,
     className = "",
@@ -75,6 +76,7 @@ export default function ReviewForm({
             setSubmitting(true);
             await onSubmit?.({
                 reportId,
+                handoverId,
                 revieweeId: reviewee?._id,
                 rating,
                 comment: comment.trim(),

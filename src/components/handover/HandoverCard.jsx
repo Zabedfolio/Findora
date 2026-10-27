@@ -19,8 +19,10 @@ import {
   X,
   ShieldAlert,
   Info,
+  PackageCheck,
 } from "lucide-react";
 import toast from "@/lib/toast";
+import useAuth from "@/hooks/useAuth";
 import {
   acceptHandoverProposal,
   suggestAlternativeProposal,
@@ -33,6 +35,7 @@ export default function HandoverCard({
   onOpenReview,
   currentRole = "receiver", // 'receiver' | 'finder' | 'admin'
 }) {
+  const { user } = useAuth();
   const [data, setData] = useState(handover);
   const [loadingAction, setLoadingAction] = useState(null);
   const [isAlternativeOpen, setIsAlternativeOpen] = useState(false);
@@ -62,6 +65,20 @@ export default function HandoverCard({
   ];
 
   const currentStepIndex = isCompleted ? 2 : isConfirmed ? 1 : 0;
+
+  const currentUserId = String(user?.id || user?._id || "").toLowerCase();
+  const currentUserEmail = String(user?.email || "").toLowerCase();
+
+  const isOwner =
+    (currentUserId && String(data.owner?.userId || data.owner?.id || "").toLowerCase() === currentUserId) ||
+    (currentUserEmail && String(data.owner?.email || "").toLowerCase() === currentUserEmail) ||
+    currentRole === "receiver" ||
+    currentRole === "owner";
+
+  const isFinder =
+    (currentUserId && String(data.finder?.userId || data.finder?.id || "").toLowerCase() === currentUserId) ||
+    (currentUserEmail && String(data.finder?.email || "").toLowerCase() === currentUserEmail) ||
+    currentRole === "finder";
 
   // 1. Accept Proposal (Auto-approves without admin requirement)
   const handleAccept = async () => {
@@ -108,16 +125,19 @@ export default function HandoverCard({
     try {
       const { handover: updated, isFullyCompleted } = await completeHandover(
         data._id || data.id,
-        roleToConfirm
+        roleToConfirm,
+        user
       );
       setData(updated);
       if (isFullyCompleted) {
-        toast.success("🎉 Both parties confirmed! Handover auto-approved & completed.");
-        if (onOpenReview) {
+        toast.success("🎉 Both parties confirmed! Handover mutually verified & completed.");
+        if (isOwner && onOpenReview) {
           onOpenReview(updated);
         }
       } else {
-        toast.success(`Delivery confirmed as ${roleToConfirm === "owner" ? "Receiver" : "Finder"}. Awaiting other party.`);
+        toast.success(
+          `Delivery confirmed as ${roleToConfirm === "owner" ? "Receiver" : "Finder"}. Awaiting counterparty confirmation.`
+        );
       }
       if (onStatusChange) onStatusChange(updated);
     } catch (err) {
@@ -392,41 +412,94 @@ export default function HandoverCard({
 
         {/* State 2: CONFIRMED -> Two-party dual completion */}
         {isConfirmed && (
-          <div className="flex flex-col sm:flex-row gap-2.5">
-            <button
-              type="button"
-              disabled={loadingAction !== null}
-              onClick={() => handlePartyConfirm("both")}
-              className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
-            >
-              {loadingAction === "both" ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <CheckCircle2 className="w-4 h-4" />
-              )}
-              <span>Both Confirm &amp; Finalize Exchange</span>
-            </button>
+          <div className="space-y-2.5">
+            {isOwner && !confirmations.ownerConfirmed && (
+              <button
+                type="button"
+                disabled={loadingAction !== null}
+                onClick={() => handlePartyConfirm("owner")}
+                className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {loadingAction === "owner" ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <PackageCheck className="w-4 h-4" />
+                )}
+                <span>I Received My Item</span>
+              </button>
+            )}
+
+            {isOwner && confirmations.ownerConfirmed && !confirmations.finderConfirmed && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 rounded-xl text-xs flex items-center gap-2 font-semibold">
+                <Clock className="w-4 h-4 shrink-0 text-amber-500" />
+                <span>You confirmed receipt! Waiting for the finder to confirm handover.</span>
+              </div>
+            )}
+
+            {isFinder && !confirmations.finderConfirmed && (
+              <button
+                type="button"
+                disabled={loadingAction !== null}
+                onClick={() => handlePartyConfirm("finder")}
+                className="w-full py-2.5 px-4 bg-[#9ae600] hover:bg-[#88cc00] text-slate-950 font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {loadingAction === "finder" ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Handshake className="w-4 h-4" />
+                )}
+                <span>I Handed Over Item</span>
+              </button>
+            )}
+
+            {isFinder && confirmations.finderConfirmed && !confirmations.ownerConfirmed && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 rounded-xl text-xs flex items-center gap-2 font-semibold">
+                <Clock className="w-4 h-4 shrink-0 text-amber-500" />
+                <span>You confirmed handover! Waiting for the receiver to confirm receipt.</span>
+              </div>
+            )}
+
+            {!isOwner && !isFinder && (
+              <div className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-xs text-center font-semibold">
+                Exchange confirmed. Both parties must click their confirmation in their respective dashboards.
+              </div>
+            )}
           </div>
         )}
 
-        {/* State 3: COMPLETED -> Phase 7 Rating unlock */}
+        {/* State 3: COMPLETED -> Review unlocks strictly for the Receiver */}
         {isCompleted && (
-          <div className="flex items-center justify-between gap-3 p-2 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
-            <div className="flex items-center gap-2 pl-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+            <div className="flex items-center gap-2 pl-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                Reunited &amp; Report Resolved
+                Reunited &amp; Verified by Both Parties
               </span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => onOpenReview && onOpenReview(data)}
-              className="py-2 px-3.5 rounded-xl bg-slate-950 dark:bg-[#9ae600] text-white dark:text-slate-950 text-xs font-bold flex items-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
-            >
-              <Star size={13} className="fill-amber-400 text-amber-400 dark:fill-slate-950 dark:text-slate-950" />
-              <span>Rate &amp; Review Exchange</span>
-            </button>
+            {isOwner && !data.isReviewed && (
+              <button
+                type="button"
+                onClick={() => onOpenReview && onOpenReview(data)}
+                className="py-2 px-3.5 rounded-xl bg-slate-950 dark:bg-[#9ae600] text-white dark:text-slate-950 text-xs font-bold flex items-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+              >
+                <Star size={13} className="fill-amber-400 text-amber-400 dark:fill-slate-950 dark:text-slate-950" />
+                <span>Rate &amp; Review Finder</span>
+              </button>
+            )}
+
+            {isOwner && data.isReviewed && (
+              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                <CheckCircle2 size={13} />
+                <span>Verified Review Submitted</span>
+              </span>
+            )}
+
+            {isFinder && (
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                Item Returned Safely
+              </span>
+            )}
           </div>
         )}
 

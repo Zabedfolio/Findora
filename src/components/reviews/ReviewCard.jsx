@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { Star, Quote } from "lucide-react";
+import StarRating from "./StarRating";
 
 export default function ReviewCard({ review = {} }) {
   const {
@@ -22,16 +22,7 @@ export default function ReviewCard({ review = {} }) {
 
       {/* Top: Star Rating & Quote Icon */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 text-[#CCFF00]">
-          {[...Array(5)].map((_, i) => (
-            <Star
-              key={i}
-              className={`w-4 h-4 ${
-                i < rating ? "fill-[#CCFF00] text-[#CCFF00]" : "text-neutral-700"
-              }`}
-            />
-          ))}
-        </div>
+        <StarRating value={rating} readOnly size="sm" />
         <Quote className="w-5 h-5 text-neutral-700" />
       </div>
 

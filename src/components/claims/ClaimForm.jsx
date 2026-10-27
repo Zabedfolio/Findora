@@ -1,9 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { ShieldCheck, Upload, Loader2, AlertCircle } from "lucide-react";
+import useAuth from "@/hooks/useAuth";
+import toast from "@/lib/toast";
+import { createClaim } from "@/services/claimService";
 
-export default function ClaimForm({ itemId, onSubmitSuccess }) {
+export default function ClaimForm({ itemId, report, onSubmitSuccess }) {
+    const router = useRouter();
+    const pathname = usePathname();
+    const { user } = useAuth();
+
     const [formData, setFormData] = useState({
         description: "",
         lostLocationTime: "",
@@ -22,7 +30,16 @@ export default function ClaimForm({ itemId, onSubmitSuccess }) {
         e.preventDefault();
         setError("");
 
-        if (formData.description.length < 20) {
+        if (!user) {
+            toast.error("Please sign in to submit a claim.");
+            const redirectUrl = pathname
+                ? `/login?redirect=${encodeURIComponent(pathname)}`
+                : "/login";
+            router.push(redirectUrl);
+            return;
+        }
+
+        if (formData.description.trim().length < 20) {
             setError("Description must be at least 20 characters to help verify ownership.");
             return;
         }
@@ -30,17 +47,46 @@ export default function ClaimForm({ itemId, onSubmitSuccess }) {
         setLoading(true);
 
         try {
+            const effectiveReportId = itemId || report?._id || report?.id;
+            const created = await createClaim({
+                reportId: effectiveReportId,
+                itemId: effectiveReportId,
+                itemTitle: report?.title,
+                itemThumbnail: report?.images?.[0] || report?.imageUrl || "",
+                category: report?.category,
+                location: report?.location,
+                description: formData.description.trim(),
+                proofText: formData.description.trim(),
+                lostLocationTime: formData.lostLocationTime.trim(),
+                proofImage: formData.proofImage.trim(),
+                claimant: {
+                    id: user.id || user._id,
+                    userId: user.id || user._id,
+                    name: user.name || "Claimant",
+                    email: user.email,
+                    avatar: user.avatar || user.image || "",
+                },
+                finder: report?.postedBy
+                    ? {
+                          id: report.postedBy.userId || report.postedBy.id,
+                          userId: report.postedBy.userId || report.postedBy.id,
+                          name: report.postedBy.name,
+                          email: report.postedBy.email,
+                          avatar: report.postedBy.image || "",
+                      }
+                    : null,
+            });
 
-            console.log("Claim submitted:", { itemId, ...formData });
+            toast.success("Claim submitted successfully! It now appears in your dashboard under Claims.");
 
-            // Success callback
-            if (onSubmitSuccess) onSubmitSuccess();
+            if (onSubmitSuccess) {
+                onSubmitSuccess(created);
+            }
 
-            // Reset form
             setFormData({ description: "", lostLocationTime: "", proofImage: "" });
-            alert("Claim submitted successfully!");
         } catch (err) {
             setError(err.message || "Failed to submit claim. Please try again.");
+            toast.error(err.message || "Failed to submit claim.");
         } finally {
             setLoading(false);
         }

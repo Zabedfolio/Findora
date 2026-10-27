@@ -103,11 +103,12 @@ export default function ClaimButton({ report }) {
           avatar: user.avatar || user.image || "",
         },
         finder: {
-          id: report.postedBy?.id || report.postedBy?._id || report.contact?.email || report.user?.id || report.user?._id || "finder",
+          id: report.postedBy?.userId || report.postedBy?.id || report.postedBy?._id || report.user?.id || report.user?._id || "finder",
+          userId: report.postedBy?.userId || report.postedBy?.id || report.postedBy?._id || report.user?.id || report.user?._id || "finder",
           name: report.postedBy?.name || report.contact?.name || report.user?.name || "Item Finder",
           email: report.postedBy?.email || report.contact?.email || report.user?.email || "finder@findora.app",
           phone: report.contact?.phone || "",
-          avatar: report.postedBy?.avatar || report.user?.avatar || "",
+          avatar: report.postedBy?.image || report.postedBy?.avatar || report.user?.avatar || "",
         },
         proofText: claimProof.trim(),
       });
