@@ -152,7 +152,7 @@ export default function NotificationBell({ className = "" }) {
 
                         {/* Footer */}
                         <Link
-                            href="/notifications"
+                            href="/dashboard/notifications"
                             onClick={() => setOpen(false)}
                             className="block border-t border-zinc-100 bg-zinc-50 px-4 py-3 text-center text-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-100"
                         >
