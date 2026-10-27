@@ -28,89 +28,21 @@ import EmptyState from "@/components/ui/EmptyState";
 import Loader from "@/components/ui/Loader";
 
 /* -------------------------------------------------------------------------- */
-/*  Data layer                                                                */
-/*  Tries the backend (NEXT_PUBLIC_API_URL/users/:id) and falls back to demo  */
-/*  data, the same way reportService.js does. Move this block into            */
-/*  src/services/userService.js once the backend endpoint exists.             */
+/*  Data layer: Fetch user profile directly from live backend database        */
 /* -------------------------------------------------------------------------- */
 
-const DEMO_USERS = [
-  {
-    id: "demo-1",
-    name: "Amelia Rahman",
-    image: "",
-    location: "Dhanmondi, Dhaka",
-    bio: "I return what I find. Mostly phones, wallets and keys around campus.",
-    memberSince: "2024-03-12T00:00:00Z",
-    badges: ["verified", "top_finder", "fast_responder", "community_hero"],
-    stats: { reportsPosted: 24, itemsReturned: 21 },
-    reviews: [
-      {
-        id: "r1",
-        reviewer: { name: "Tanvir Ahmed", image: "" },
-        rating: 5,
-        comment: "Got my wallet back within a day. Very honest and easy to coordinate with.",
-        createdAt: "2026-10-14T10:20:00Z",
-      },
-      {
-        id: "r2",
-        reviewer: { name: "Nusrat Jahan", image: "" },
-        rating: 5,
-        comment: "Replied fast and met me at a public place for the handover. Highly recommended.",
-        createdAt: "2026-09-29T15:05:00Z",
-      },
-      {
-        id: "r3",
-        reviewer: { name: "Rafi Hasan", image: "" },
-        rating: 4,
-        comment: "Smooth process. Took a little while to confirm details but all good.",
-        createdAt: "2026-08-03T08:40:00Z",
-      },
-    ],
-  },
-  {
-    id: "demo-2",
-    name: "Marcus Reyes",
-    image: "",
-    location: "Uttara, Dhaka",
-    bio: "",
-    memberSince: "2026-08-20T00:00:00Z",
-    badges: ["verified"],
-    stats: { reportsPosted: 3, itemsReturned: 1 },
-    reviews: [
-      {
-        id: "r4",
-        reviewer: { name: "Priya Das", image: "" },
-        rating: 5,
-        comment: "Helpful and polite. Thanks for returning my ID card!",
-        createdAt: "2026-10-02T12:00:00Z",
-      },
-    ],
-  },
-  {
-    id: "demo-3",
-    name: "Sofia Karim",
-    image: "",
-    location: "",
-    bio: "",
-    memberSince: "2026-10-05T00:00:00Z",
-    badges: [],
-    stats: { reportsPosted: 0, itemsReturned: 0 },
-    reviews: [],
-  },
-];
-
 async function getUserById(id) {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL;
-  if (apiBase) {
-    try {
-      const res = await fetch(`${apiBase}/users/${id}`);
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn("Backend API unreachable, falling back to demo users:", e.message);
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  try {
+    const res = await fetch(`${apiBase}/users/${id}`, { cache: "no-store" });
+    if (res.ok) {
+      const json = await res.json();
+      return json.data || json;
     }
+  } catch (e) {
+    console.error("Backend API fetch error for user profile:", e.message);
   }
-  return DEMO_USERS.find((u) => u.id === id) || null;
+  return null;
 }
 
 /* -------------------------------------------------------------------------- */
