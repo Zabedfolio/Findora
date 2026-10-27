@@ -47,7 +47,33 @@ export async function createClaim({
   finder,
   proofText,
   secretAnswers,
+  description,
+  lostLocationTime,
+  proofImage,
 }) {
+  const normalizedClaimant = claimant
+    ? {
+        userId: claimant.userId || claimant.id || claimant._id || "usr_current",
+        id: claimant.id || claimant.userId || claimant._id || "usr_current",
+        name: claimant.name || "Claimant",
+        email: claimant.email || "",
+        avatar: claimant.avatar || claimant.image || "/default-avatar.png",
+      }
+    : null;
+
+  const normalizedFinder = finder
+    ? {
+        userId: finder.userId || finder.id || finder._id || "usr_finder",
+        id: finder.id || finder.userId || finder._id || "usr_finder",
+        name: finder.name || "Item Finder",
+        email: finder.email || "",
+        phone: finder.phone || "",
+        avatar: finder.avatar || finder.image || "/default-avatar.png",
+      }
+    : null;
+
+  const effectiveProof = proofText || description || "Submitted proof of ownership.";
+
   const apiBase = process.env.NEXT_PUBLIC_API_URL;
   if (apiBase) {
     try {
@@ -56,18 +82,31 @@ export async function createClaim({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           reportId,
+          itemId: reportId,
           itemTitle,
           itemThumbnail,
           category,
           location,
-          claimant,
-          finder,
-          proofText,
+          claimant: normalizedClaimant,
+          finder: normalizedFinder,
+          proofText: effectiveProof,
+          description: effectiveProof,
           secretAnswers,
+          lostLocationTime,
+          proofImage,
         }),
       });
       if (response.ok) {
-        return await response.json();
+        const json = await response.json();
+        const saved = json.data || json.claim || json;
+        const normalized = {
+          ...saved,
+          id: saved.id || saved._id,
+          _id: saved._id || saved.id,
+        };
+        const all = getStoredClaims();
+        saveStoredClaims([normalized, ...all.filter((c) => (c.id || c._id) !== normalized.id)]);
+        return normalized;
       }
     } catch (e) {
       console.warn("Backend API unreachable, saving claim to local store:", e.message);
@@ -99,20 +138,24 @@ export async function createClaim({
     status: "pending",
     statusLabel: "Under Review",
     statusDescription: "Finder is reviewing your submitted proof of ownership.",
-    claimant: claimant || {
+    claimant: normalizedClaimant || {
       id: "usr_current",
+      userId: "usr_current",
       name: "Current User",
       email: "user@findora.app",
     },
-    finder: finder || {
+    finder: normalizedFinder || {
       id: "usr_finder",
+      userId: "usr_finder",
       name: "Item Finder",
       email: "finder@findora.app",
     },
     claimantProof: {
-      description: proofText || "Submitted proof of ownership",
+      description: effectiveProof,
       submittedAt: now.toISOString(),
       secretAnswers: secretAnswers || [],
+      additionalProof: lostLocationTime || "",
+      proofPhotoUrl: proofImage || "",
     },
     timeline: [
       {
@@ -154,9 +197,42 @@ export async function getMyClaims(params = {}, currentUser = null) {
           searchParams.append(key, String(val));
         }
       });
+
+      if (currentUser) {
+        const uid = currentUser.id || currentUser._id;
+        if (uid && !searchParams.has("userId")) {
+          searchParams.append("userId", String(uid));
+        }
+        if (currentUser.email && !searchParams.has("email")) {
+          searchParams.append("email", String(currentUser.email));
+        }
+      }
+
       const response = await fetch(`${apiBase}/claims/mine?${searchParams.toString()}`);
       if (response.ok) {
-        return await response.json();
+        const json = await response.json();
+        const rawClaims = Array.isArray(json?.claims)
+          ? json.claims
+          : Array.isArray(json?.data)
+          ? json.data
+          : [];
+        const normalizedClaims = rawClaims.map((c) => ({
+          ...c,
+          id: c.id || c._id,
+          _id: c._id || c.id,
+        }));
+
+        return {
+          claims: normalizedClaims,
+          counts: json.counts || {
+            all: normalizedClaims.length,
+            in_handover: normalizedClaims.filter((c) => c.status === "in_handover" || c.status === "approved").length,
+            pending: normalizedClaims.filter((c) => c.status === "pending").length,
+            needs_info: normalizedClaims.filter((c) => c.status === "needs_info").length,
+            reunited: normalizedClaims.filter((c) => c.status === "reunited").length,
+            rejected: normalizedClaims.filter((c) => c.status === "rejected").length,
+          },
+        };
       }
     } catch (e) {
       console.warn("Backend claims API unreachable, falling back to local claims:", e.message);

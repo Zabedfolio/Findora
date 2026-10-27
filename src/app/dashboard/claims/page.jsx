@@ -50,25 +50,6 @@ import {
 
 // Data layer                                                      
 async function fetchMyClaims(params = {}, user = null) {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL;
-    if (apiBase) {
-        try {
-            const searchParams = new URLSearchParams();
-            Object.entries(params).forEach(([key, val]) => {
-                if (val !== undefined && val !== null && val !== "") {
-                    searchParams.append(key, String(val));
-                }
-            });
-            const response = await fetch(`${apiBase}/claims/mine?${searchParams.toString()}`);
-            if (response.ok) {
-                return await response.json();
-            }
-        } catch (e) {
-            console.warn("Backend /claims/mine unreachable, falling back to local dataset:", e.message);
-        }
-    }
-
-    // Filter dynamically by the authenticated user
     return await serviceGetMyClaims(params, user);
 }
 

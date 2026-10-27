@@ -24,6 +24,7 @@ import {
   getAllUnifiedReports,
   updateReportStatus,
   deleteReport,
+  normalizeItem,
 } from "@/services/reportService";
 import useAuth from "@/hooks/useAuth";
 import toast from "@/lib/toast";
@@ -47,12 +48,31 @@ export default function MyReportsTable() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch reports for current user
-  const loadReports = () => {
+  const loadReports = async () => {
     try {
-      const all = getAllUnifiedReports();
       const currentUserId = user?.id || user?._id;
       const currentUserEmail = user?.email;
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
 
+      if (apiBase && (currentUserId || currentUserEmail)) {
+        try {
+          const params = new URLSearchParams();
+          if (currentUserId) params.set("userId", currentUserId);
+          if (currentUserEmail) params.set("email", currentUserEmail);
+          const res = await fetch(`${apiBase}/items?${params.toString()}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (Array.isArray(json?.data)) {
+              setReports(json.data.map(normalizeItem));
+              return;
+            }
+          }
+        } catch (fetchErr) {
+          console.warn("Backend /items fetch error, fallback to local:", fetchErr.message);
+        }
+      }
+
+      const all = getAllUnifiedReports();
       const userOnly = all.filter((item) => {
         const ownerId = item.owner?._id || item.owner?.id;
         const ownerEmail = item.owner?.email;
