@@ -136,3 +136,22 @@ export async function markAllNotificationsRead() {
     setStored(getStored().map((n) => ({ ...n, isRead: true })));
     return { success: true };
 }
+
+/**
+ * Delete every notification for the current user
+ */
+export async function clearAllNotifications() {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
+    if (apiBase) {
+        try {
+            const res = await fetch(`${apiBase}/notifications`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+            if (res.ok) return await res.json();
+        } catch { }
+    }
+
+    setStored([]);
+    return { success: true };
+}
