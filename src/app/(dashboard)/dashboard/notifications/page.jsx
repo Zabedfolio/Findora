@@ -119,6 +119,7 @@ export default function NotificationsPage() {
                         </div>
                     </motion.div>
                 )}
+
             </AnimatePresence>
 
             {/* Filter tabs */}
