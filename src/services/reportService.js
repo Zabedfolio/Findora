@@ -1,5 +1,3 @@
-import { lostReports, foundReports } from "@/demo-data";
-
 /**
  * All predefined categories for filtering
  */
