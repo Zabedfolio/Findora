@@ -2,16 +2,22 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ArrowUpRight } from "lucide-react";
 
 export default function Footer() {
+  const pathname = usePathname();
   const { t } = useTranslation();
   const [currentYear, setCurrentYear] = useState(2026);
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
   }, []);
+
+  if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/admin")) {
+    return null;
+  }
 
   return (
     <footer
@@ -128,7 +134,7 @@ export default function Footer() {
 
             {/* Deck / Guidelines Pill Button */}
             <Link
-              href="/how-it-works"
+              href="/#how-it-works"
               className="inline-flex items-center gap-3.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#9ae600]/40 rounded-full px-4 py-2.5 transition-all group shadow-xs"
             >
               <div className="w-7 h-7 rounded-full bg-[#9ae600] text-slate-950 flex items-center justify-center shadow-xs transition-transform duration-200 group-hover:scale-110">
@@ -168,8 +174,9 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/categories" className="hover:text-white transition-colors">
-                    {t("footer.categories")}
+                  <Link href="/match-radar" className="hover:text-white transition-colors flex items-center gap-1.5">
+                    <span>{t("nav.matchRadar", "Match Radar")}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#9ae600]" />
                   </Link>
                 </li>
               </ul>
@@ -275,7 +282,7 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/how-it-works" className="hover:text-white transition-colors">
+                  <Link href="/#how-it-works" className="hover:text-white transition-colors">
                     {t("footer.faqs")}
                   </Link>
                 </li>

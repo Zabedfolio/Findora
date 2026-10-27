@@ -4,7 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
+import useAuth from "@/hooks/useAuth";
+import UserMenu from "./UserMenu";
 import NavAuthButtons from "./NavAuthButtons";
+import { Skeleton } from "@heroui/react";
 import { Menu, X, ArrowUpRight } from "lucide-react";
 
 export default function Navbar() {
@@ -12,6 +15,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const { t } = useTranslation();
+  const { user, loading, isAdmin, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,10 +30,13 @@ export default function Navbar() {
     setMobileMenuOpen(false);
   }, [pathname]);
 
+  if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/admin")) {
+    return null;
+  }
+
   const navLinks = [
     { href: "/reports", label: t("nav.browse") },
-    { href: "/categories", label: t("nav.categories") },
-    { href: "/how-it-works", label: t("nav.howItWorks") },
+    { href: "/match-radar", label: t("nav.matchRadar", "Match Radar"), isRadar: true },
     { href: "/trust", label: t("nav.trust") },
   ];
 
@@ -56,7 +63,7 @@ export default function Navbar() {
                   className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(154,230,0,0.5)]"
                 />
               </div>
-              <span className="font-bold text-xl tracking-tight text-slate-900">
+              <span className="font-semibold text-2xl tracking-tight text-slate-950 font-heading">
                 Findora
               </span>
             </Link>
@@ -69,11 +76,22 @@ export default function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`transition-colors whitespace-nowrap ${
+                    className={`flex items-center gap-1.5 transition-colors whitespace-nowrap ${
                       isActive ? "text-slate-950 font-semibold" : "hover:text-slate-900"
                     }`}
                   >
-                    {link.label}
+                    {link.isRadar && (
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#9ae600] opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#9ae600]" />
+                      </span>
+                    )}
+                    <span>{link.label}</span>
+                    {link.isRadar && (
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-[#9ae600]/20 text-[#629400] border border-[#9ae600]/40 leading-none">
+                        LIVE
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -81,19 +99,25 @@ export default function Navbar() {
           </div>
 
           {/* Right Action Elements (Desktop) */}
-          <NavAuthButtons />
+          <NavAuthButtons user={user} loading={loading} isAdmin={isAdmin} logout={logout} />
 
-          {/* Mobile Menu Button */}
-          <div className="flex md:hidden items-center gap-3">
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-1.5 bg-[#9ae600] hover:bg-[#88cc00] active:scale-95 text-slate-950 font-bold pl-3 pr-1.5 py-1.5 rounded-full text-xs tracking-tight transition-all duration-200 shadow-[0_0_15px_rgba(154,230,0,0.4)] group"
-            >
-              <span>{t("nav.register")}</span>
-              <span className="w-5 h-5 rounded-full bg-slate-950 text-[#9ae600] flex items-center justify-center transition-transform duration-200 group-hover:rotate-45 shrink-0">
-                <ArrowUpRight className="w-3 h-3" />
-              </span>
-            </Link>
+          {/* Mobile Right Action Area */}
+          <div className="flex md:hidden items-center gap-2.5">
+            {loading ? (
+              <Skeleton className="w-8 h-8 rounded-full bg-slate-200 animate-pulse" />
+            ) : user ? (
+              <UserMenu user={user} isAdmin={isAdmin} logout={logout} />
+            ) : (
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-1.5 bg-[#9ae600] hover:bg-[#88cc00] active:scale-95 text-slate-950 font-bold pl-3 pr-1.5 py-1.5 rounded-full text-xs tracking-tight transition-all duration-200 shadow-[0_0_15px_rgba(154,230,0,0.4)] group"
+              >
+                <span>{t("nav.register")}</span>
+                <span className="w-5 h-5 rounded-full bg-slate-950 text-[#9ae600] flex items-center justify-center transition-transform duration-200 group-hover:rotate-45 shrink-0">
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </span>
+              </Link>
+            )}
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -117,17 +141,37 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`py-2 transition-colors ${
+                  className={`flex items-center justify-between py-2 transition-colors ${
                     isActive ? "text-slate-950 font-semibold" : "hover:text-slate-900"
                   }`}
                 >
-                  {link.label}
+                  <div className="flex items-center gap-2">
+                    {link.isRadar && (
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#9ae600] opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#9ae600]" />
+                      </span>
+                    )}
+                    <span>{link.label}</span>
+                  </div>
+                  {link.isRadar && (
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#9ae600]/20 text-[#629400] border border-[#9ae600]/40">
+                      LIVE RADAR
+                    </span>
+                  )}
                 </Link>
               );
             })}
           </nav>
 
-          <NavAuthButtons isMobile onActionClick={() => setMobileMenuOpen(false)} />
+          <NavAuthButtons
+            isMobile
+            user={user}
+            loading={loading}
+            isAdmin={isAdmin}
+            logout={logout}
+            onActionClick={() => setMobileMenuOpen(false)}
+          />
         </div>
       )}
     </header>
