@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
 import Loader from "@/components/ui/Loader";
+import StarRating from "@/components/reviews/StarRating";
 
 /* -------------------------------------------------------------------------- */
 /*  Data layer: Fetch user profile directly from live backend database        */
@@ -102,23 +103,6 @@ function Avatar({ src, name, className = "" }) {
       onError={() => setFailed(true)}
       className={`object-cover ${className}`}
     />
-  );
-}
-
-function Stars({ rating, className = "w-4 h-4" }) {
-  return (
-    <div className="flex items-center gap-0.5" role="img" aria-label={`${rating} out of 5 stars`}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Star
-          key={n}
-          className={`${className} ${
-            n <= Math.round(rating)
-              ? "fill-amber-400 text-amber-400"
-              : "text-slate-300 dark:text-slate-600"
-          }`}
-        />
-      ))}
-    </div>
   );
 }
 
@@ -339,12 +323,12 @@ function ProfileContent() {
               Reviews{reviews.length > 0 && ` (${reviews.length})`}
             </h2>
             {reviews.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Stars rating={averageRating} />
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                  {averageRating.toFixed(1)}
-                </span>
-              </div>
+              <StarRating
+                value={averageRating}
+                readOnly
+                variant="badge"
+                count={reviews.length}
+              />
             )}
           </div>
 
@@ -371,7 +355,7 @@ function ProfileContent() {
                         )}
                       </div>
                       <div className="mt-1">
-                        <Stars rating={Number(review.rating) || 0} className="w-3.5 h-3.5" />
+                        <StarRating value={Number(review.rating) || 5} readOnly size="xs" />
                       </div>
                       {review.comment && (
                         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">

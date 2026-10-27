@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { CheckCircle2, Send, LoaderCircle } from "lucide-react";
-import StarRating from "@/components/ui/StarRating";
+import StarRating from "./StarRating";
 
 const MIN_COMMENT = 10;
 const MAX_COMMENT = 500;
