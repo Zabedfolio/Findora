@@ -6,8 +6,9 @@ import { useMeasure } from "@/hooks/useMeasure";
 import { ChartTip, TipRow } from "./ui";
 import { cn } from "@/utils/cn";
 
-export default function CategoryBars({ data, segment }) {
-  const max = Math.max(...data.map((d) => d.total), 1);
+export default function CategoryBars({ data = [], segment }) {
+  const list = data || [];
+  const max = Math.max(...list.map((d) => d?.total || 0), 1);
   const rootRef = useRef(null);
   const [, { width: rootW }] = useMeasure();
   const [hover, setHover] = useState(null);

@@ -8,10 +8,11 @@ const R = 82;
 const CIRC = 2 * Math.PI * R;
 const GAP = 5;
 
-export default function DonutChart({ data, delay = 0 }) {
+export default function DonutChart({ data = [], delay = 0 }) {
   const [hover, setHover] = useState(null);
-  const total = data.reduce((a, b) => a + b.value, 0);
-  const fracs = useMemo(() => data.map((d) => (total ? d.value / total : 0)), [data, total]);
+  const chartData = data || [];
+  const total = chartData.reduce((a, b) => a + (b?.value || 0), 0);
+  const fracs = useMemo(() => chartData.map((d) => (total ? (d?.value || 0) / total : 0)), [chartData, total]);
   const fracsT = useTweenedSeries(fracs, 0.9);
   const totalT = Math.round(useCountUp(total));
 
@@ -19,8 +20,8 @@ export default function DonutChart({ data, delay = 0 }) {
   fracsT.reduce((acc, f, i) => (starts[i] = acc, acc + f), 0);
 
   const active = hover ?? "returned";
-  const activeRow = data.find((d) => d.status === active);
-  const activeIdx = data.findIndex((d) => d.status === active);
+  const activeRow = chartData.find((d) => d.status === active);
+  const activeIdx = chartData.findIndex((d) => d.status === active);
 
   return (
     <Card delay={delay} className="flex h-full flex-col">

@@ -2,8 +2,9 @@ import { motion } from "framer-motion";
 import { MapPin } from "lucide-react";
 import { fmtInt } from "@/lib/format";
 
-export default function LocationList({ data }) {
-  const max = Math.max(...data.map((d) => d.total), 1);
+export default function LocationList({ data = [] }) {
+  const list = data || [];
+  const max = Math.max(...list.map((d) => d?.total || 0), 1);
   return (
     <div className="px-5 pb-5 pt-1 sm:px-6">
       <div className="space-y-2">
