@@ -38,6 +38,27 @@ function saveStore(handovers) {
  * Fetch all handovers categorized by status and filtered by user
  */
 export async function getHandovers(filter = "all", currentUser = null, isAdmin = false) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const searchParams = new URLSearchParams();
+      if (filter && filter !== "all") searchParams.set("filter", filter);
+      if (isAdmin) searchParams.set("isAdmin", "true");
+      if (currentUser) {
+        const uid = currentUser.id || currentUser._id;
+        if (uid) searchParams.set("userId", String(uid));
+        if (currentUser.email) searchParams.set("email", String(currentUser.email));
+      }
+      const res = await fetch(`${apiBase}/handovers?${searchParams.toString()}`);
+      if (res.ok) {
+        const json = await res.json();
+        return json;
+      }
+    } catch (e) {
+      console.warn("Backend handovers API unreachable, fallback to local:", e.message);
+    }
+  }
+
   const all = getStore();
 
   let targetList = all;
@@ -208,6 +229,23 @@ export async function createHandoverProposal({
  * No admin approval needed. When either party clicks accept, it auto-confirms!
  */
 export async function acceptHandoverProposal(id, recipientRole = "owner") {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/handovers/${id}/accept`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: recipientRole }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch (e) {
+      console.warn("Backend accept handover error, fallback to local:", e.message);
+    }
+  }
+
   const all = getStore();
   const index = all.findIndex((h) => h._id === id || h.id === id);
   if (index === -1) {
@@ -278,9 +316,33 @@ export async function suggestAlternativeProposal(
 /**
  * TWO-PARTY CONFIRMATION:
  * Completes automatically when finder AND receiver both click confirm!
- * No admin approval required. Automatically resolves report and unlocks Phase 7 ratings.
+ * No admin approval required. Automatically resolves report and unlocks verified ratings.
  */
-export async function completeHandover(id, partyRole = "owner") {
+export async function completeHandover(id, partyRole = "owner", currentUser = null) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/handovers/${id}/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: partyRole,
+          userId: currentUser?.id || currentUser?._id,
+          email: currentUser?.email,
+        }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return {
+          handover: json.data,
+          isFullyCompleted: Boolean(json.isFullyCompleted),
+        };
+      }
+    } catch (e) {
+      console.warn("Backend confirm handover error, fallback to local:", e.message);
+    }
+  }
+
   const all = getStore();
   const index = all.findIndex((h) => h._id === id || h.id === id);
   if (index === -1) {
@@ -297,14 +359,6 @@ export async function completeHandover(id, partyRole = "owner") {
     ...prevConfirmations,
     ...(partyRole === "owner" ? { ownerConfirmed: true, ownerConfirmedAt: new Date().toISOString() } : {}),
     ...(partyRole === "finder" ? { finderConfirmed: true, finderConfirmedAt: new Date().toISOString() } : {}),
-    ...(partyRole === "both"
-      ? {
-          ownerConfirmed: true,
-          finderConfirmed: true,
-          ownerConfirmedAt: new Date().toISOString(),
-          finderConfirmedAt: new Date().toISOString(),
-        }
-      : {}),
   };
 
   // Both finder and receiver must confirm
@@ -323,9 +377,9 @@ export async function completeHandover(id, partyRole = "owner") {
       ...(existing.history || []),
       {
         at: new Date().toISOString(),
-        by: partyRole === "both" ? "Both Parties" : partyRole === "finder" ? "Finder" : "Receiver / Owner",
+        by: partyRole === "finder" ? "Finder" : "Receiver / Owner",
         action: isFullyCompleted
-          ? "Both parties signed off! Handover auto-approved & completed."
+          ? "Both parties signed off! Handover mutually verified & completed."
           : `Signed delivery confirmation (${partyRole === "finder" ? "Finder" : "Receiver"}). Awaiting counterparty confirmation.`,
       },
     ],
@@ -348,6 +402,48 @@ export async function completeHandover(id, partyRole = "owner") {
     handover: updated,
     isFullyCompleted,
   };
+}
+
+/**
+ * Check if the current user has any unreviewed completed handover with a finder
+ */
+export async function checkReviewEligibility(targetUserId, currentUser) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase && targetUserId && currentUser) {
+    try {
+      const uid = currentUser.id || currentUser._id;
+      const res = await fetch(
+        `${apiBase}/handovers/eligible/${targetUserId}?reviewerId=${uid}&email=${currentUser.email || ""}`
+      );
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn("Backend check review eligibility error:", e.message);
+    }
+  }
+
+  // Fallback check against local store
+  const all = getStore();
+  const cId = String(currentUser?.id || currentUser?._id || "").toLowerCase();
+  const cEmail = String(currentUser?.email || "").toLowerCase();
+
+  const eligible = all.find((h) => {
+    const finderId = String(h.finder?.id || h.finder?._id || "").toLowerCase();
+    const ownerId = String(h.owner?.id || h.owner?._id || "").toLowerCase();
+    const ownerEmail = String(h.owner?.email || "").toLowerCase();
+
+    return (
+      finderId === String(targetUserId).toLowerCase() &&
+      (ownerId === cId || (cEmail && ownerEmail === cEmail)) &&
+      (h.status === "completed" || h.status === "reunited") &&
+      h.confirmations?.ownerConfirmed &&
+      h.confirmations?.finderConfirmed &&
+      !h.isReviewed
+    );
+  });
+
+  return { eligible: Boolean(eligible), handover: eligible || null };
 }
 
 /**

@@ -29,6 +29,7 @@ function getInitials(name) {
 export default function ReviewForm({
     reviewee,
     reportId,
+    handoverId,
     onSubmit,
     onSuccess,
     className = "",
@@ -75,6 +76,7 @@ export default function ReviewForm({
             setSubmitting(true);
             await onSubmit?.({
                 reportId,
+                handoverId,
                 revieweeId: reviewee?._id,
                 rating,
                 comment: comment.trim(),

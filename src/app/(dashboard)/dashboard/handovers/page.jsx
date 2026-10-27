@@ -24,6 +24,7 @@ import HandoverCard from "@/components/handover/HandoverCard";
 import HandoverProposalForm from "@/components/handover/HandoverProposalForm";
 import ReviewForm from "@/components/reviews/ReviewForm";
 import { getHandovers } from "@/services/handoverService";
+import { submitReview } from "@/services/reviewService";
 
 function HandoversDashboardContent() {
   const { user } = useAuth();
@@ -112,9 +113,36 @@ function HandoversDashboardContent() {
   };
 
   const handleReviewSubmit = async (reviewData) => {
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    toast.success("Thank you! Your verified community rating has been recorded.");
-    setReviewModalHandover(null);
+    try {
+      await submitReview({
+        handoverId: reviewModalHandover?._id || reviewModalHandover?.id,
+        reviewer: {
+          userId: user?.id || user?._id,
+          name: user?.name || "Verified Receiver",
+          email: user?.email || "",
+          avatar: user?.avatar || user?.image || "/default-avatar.png",
+          role: "Verified Item Receiver",
+        },
+        targetUser: {
+          userId: reviewModalHandover?.finder?.userId || reviewModalHandover?.finder?.id,
+          name: reviewModalHandover?.finder?.name,
+          email: reviewModalHandover?.finder?.email,
+        },
+        targetItem: {
+          itemId: reviewModalHandover?.reportId,
+          title: reviewModalHandover?.itemTitle,
+        },
+        rating: reviewData.rating,
+        comment: reviewData.comment,
+      });
+
+      toast.success("Thank you! Your verified community rating has been recorded and published.");
+      setReviewModalHandover(null);
+      await loadHandovers();
+    } catch (err) {
+      toast.error(err.message || "Failed to submit review.");
+      throw err;
+    }
   };
 
   return (
@@ -380,8 +408,9 @@ function HandoversDashboardContent() {
 
             <ReviewForm
               reportId={reviewModalHandover?.reportId}
+              handoverId={reviewModalHandover?._id || reviewModalHandover?.id}
               reviewee={{
-                _id: reviewModalHandover?.finder?.id || "finder_01",
+                _id: reviewModalHandover?.finder?.userId || reviewModalHandover?.finder?.id || "finder_01",
                 name: reviewModalHandover?.finder?.name || "Finder",
                 avatar: reviewModalHandover?.finder?.avatar || "/default-avatar.png",
                 role: "finder",
