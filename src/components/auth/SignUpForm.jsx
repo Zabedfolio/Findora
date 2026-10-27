@@ -78,7 +78,7 @@ export default function SignUpForm() {
 
     try {
       if (authClient?.signUp?.email) {
-        const { data, error: authError } = await authClient.signUp.email({
+        const { error: authError } = await authClient.signUp.email({
           email: formData.email,
           password: formData.password,
           name: formData.name,
