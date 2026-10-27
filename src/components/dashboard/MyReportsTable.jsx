@@ -28,7 +28,6 @@ import {
 import useAuth from "@/hooks/useAuth";
 import toast from "@/lib/toast";
 
-const DEFAULT_USER_ITEM_IDS = new Set(["lost-1", "lost-3", "found-1", "found-2"]);
 const PAGE_SIZE = 6;
 
 const STATUS_FILTERS = [
@@ -51,20 +50,18 @@ export default function MyReportsTable() {
   const loadReports = () => {
     try {
       const all = getAllUnifiedReports();
-      const currentUserId = user?.id || user?._id || "user_current";
-      const currentUserEmail = user?.email || "";
+      const currentUserId = user?.id || user?._id;
+      const currentUserEmail = user?.email;
 
       const userOnly = all.filter((item) => {
-        const id = String(item.id || item._id);
         const ownerId = item.owner?._id || item.owner?.id;
         const ownerEmail = item.owner?.email;
 
         return (
           item.isUserCreated ||
-          ownerId === currentUserId ||
+          (currentUserId && ownerId === currentUserId) ||
           (currentUserEmail && ownerEmail === currentUserEmail) ||
-          item.owner?.isCurrentUser ||
-          DEFAULT_USER_ITEM_IDS.has(id)
+          item.owner?.isCurrentUser
         );
       });
 

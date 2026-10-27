@@ -7,19 +7,18 @@ const LOCAL_STORAGE_KEY = "findora_user_claims_store";
  */
 function getStoredClaims() {
   if (typeof window === "undefined") {
-    return [...demoClaims];
+    return [];
   }
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(demoClaims));
-      return [...demoClaims];
+      return [];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...demoClaims];
+    return Array.isArray(parsed) ? parsed : [];
   } catch (err) {
     console.warn("Could not read local claims store:", err);
-    return [...demoClaims];
+    return [];
   }
 }
 

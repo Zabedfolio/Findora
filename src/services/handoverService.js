@@ -201,18 +201,17 @@ const INITIAL_DEMO_HANDOVERS = [
  * Read handovers store with fallback to mock data
  */
 function getStore() {
-  if (typeof window === "undefined") return [...INITIAL_DEMO_HANDOVERS];
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DEMO_HANDOVERS));
-      return [...INITIAL_DEMO_HANDOVERS];
+      return [];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...INITIAL_DEMO_HANDOVERS];
+    return Array.isArray(parsed) ? parsed : [];
   } catch (err) {
     console.warn("Could not read handovers store:", err);
-    return [...INITIAL_DEMO_HANDOVERS];
+    return [];
   }
 }
 
