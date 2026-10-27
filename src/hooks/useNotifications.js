@@ -1,17 +1,11 @@
 "use client";
 
-import {
-    getNotifications,
-    markNotificationRead,
-    markAllNotificationsRead,
-    clearAllNotifications,
-} from "@/services/notificationService";
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     getNotifications,
     markNotificationRead,
     markAllNotificationsRead,
+    clearAllNotifications,
 } from "@/services/notificationService";
 
 const getId = (n) => n._id || n.id;
@@ -58,20 +52,20 @@ export function useNotifications({ pollMs = 30000 } = {}) {
         [refetch]
     );
 
-    const clearAll = useCallback(async () => {
-        setNotifications([]);
+    const markAllAsRead = useCallback(async () => {
+        setNotifications((list) => list.map((n) => ({ ...n, isRead: true })));
         try {
-            await clearAllNotifications();
+            await markAllNotificationsRead();
         } catch (err) {
             setError(err);
             refetch();
         }
     }, [refetch]);
 
-    const markAllAsRead = useCallback(async () => {
-        setNotifications((list) => list.map((n) => ({ ...n, isRead: true })));
+    const clearAll = useCallback(async () => {
+        setNotifications([]);
         try {
-            await markAllNotificationsRead();
+            await clearAllNotifications();
         } catch (err) {
             setError(err);
             refetch();
