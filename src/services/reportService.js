@@ -31,27 +31,50 @@ export const POPULAR_LOCATIONS = [
 ];
 
 /**
- * Unified list of all reports
+ * Normalized representation of an Item document from MongoDB
  */
-export const getAllDemoReports = () => [...lostReports, ...foundReports];
+export function normalizeItem(doc) {
+  if (!doc) return null;
+  const id = String(doc._id || doc.id || "");
+  const owner = doc.postedBy
+    ? {
+        id: doc.postedBy.userId || "user_current",
+        _id: doc.postedBy.userId || "user_current",
+        name: doc.postedBy.name || "Findora Member",
+        email: doc.postedBy.email || "",
+        image: doc.postedBy.image || "/default-avatar.png",
+      }
+    : (doc.owner || { name: "Findora Member" });
+
+  return {
+    ...doc,
+    id,
+    _id: id,
+    title: doc.title || "Reported Item",
+    description: doc.description || "",
+    type: doc.type || "lost",
+    category: doc.category || "General",
+    location: doc.location || "Dhaka, Bangladesh",
+    status: doc.status || "active",
+    imageUrl: (doc.images && doc.images[0]) || doc.imageUrl || "/default-avatar.png",
+    images: doc.images || (doc.imageUrl ? [doc.imageUrl] : []),
+    dateRaw: doc.date || doc.createdAt || new Date().toISOString(),
+    date: doc.date ? new Date(doc.date).toLocaleDateString() : "Recently",
+    owner,
+    isUserCreated: Boolean(doc.isUserCreated || doc.postedBy),
+  };
+}
+
+/**
+ * Unified list of all reports (Mock demo data purged)
+ */
+export const getAllDemoReports = () => [];
 
 /**
  * Fetch and filter reports based on URL / search parameters.
- *
- * @param {Object} params
- * @param {string} [params.q] - Search query
- * @param {'all' | 'lost' | 'found'} [params.type='all'] - Listing type filter
- * @param {string} [params.category] - Category filter
- * @param {string} [params.location] - Location query/filter
- * @param {string} [params.from] - Start date (YYYY-MM-DD or ISO)
- * @param {string} [params.to] - End date (YYYY-MM-DD or ISO)
- * @param {'newest' | 'oldest' | 'relevance'} [params.sort='newest'] - Sorting order
- * @param {number} [params.page=1] - 1-based page index
- * @param {number} [params.limit=9] - Items per page
- * @returns {Promise<{ reports: Array, totalReports: number, totalPages: number, currentPage: number, typeCounts: { all: number, lost: number, found: number } }>}
  */
 export async function getReports(params = {}) {
-  // Try querying backend if configured
+  // Query live backend Express API
   const apiBase = process.env.NEXT_PUBLIC_API_URL;
   if (apiBase) {
     try {
@@ -61,13 +84,32 @@ export async function getReports(params = {}) {
           searchParams.append(key, String(val));
         }
       });
-      const response = await fetch(`${apiBase}/reports?${searchParams.toString()}`);
+      const response = await fetch(`${apiBase}/items?${searchParams.toString()}`);
       if (response.ok) {
-        return await response.json();
+        const json = await response.json();
+        const rawItems = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+        const normalized = rawItems.map(normalizeItem);
+
+        const typeCounts = {
+          all: normalized.length,
+          lost: normalized.filter((item) => item.type === "lost").length,
+          found: normalized.filter((item) => item.type === "found").length,
+        };
+
+        const page = Number(params.page) || 1;
+        const limit = Number(params.limit) || 9;
+        const totalReports = json.count || normalized.length;
+
+        return {
+          reports: normalized,
+          totalReports,
+          totalPages: Math.max(1, Math.ceil(totalReports / limit)),
+          currentPage: page,
+          typeCounts,
+        };
       }
     } catch (e) {
-      // Fallback seamlessly to local demo data
-      console.warn("Backend API unreachable, falling back to local demo dataset:", e.message);
+      console.warn("Backend API unreachable:", e.message);
     }
   }
 
@@ -271,17 +313,20 @@ export function getAllUnifiedReports() {
 /**
  * Fetch a single report by ID (checks custom reports and demo reports)
  */
+/**
+ * Fetch a single report by ID (checks live API, then custom reports)
+ */
 export async function getReportById(id) {
-  // If backend is configured, attempt fetch
   const apiBase = process.env.NEXT_PUBLIC_API_URL;
   if (apiBase) {
     try {
-      const res = await fetch(`${apiBase}/reports/${id}`);
+      const res = await fetch(`${apiBase}/items/${id}`);
       if (res.ok) {
-        return await res.json();
+        const json = await res.json();
+        return normalizeItem(json.data || json);
       }
     } catch (e) {
-      // Fallback seamlessly
+      // Fallback
     }
   }
 
@@ -293,22 +338,6 @@ export async function getReportById(id) {
  * Create a new lost or found report
  */
 export async function createReport(reportData, user) {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL;
-  if (apiBase) {
-    try {
-      const res = await fetch(`${apiBase}/reports`, {
-        method: "POST",
-        body: reportData instanceof FormData ? reportData : JSON.stringify(reportData),
-        headers: reportData instanceof FormData ? {} : { "Content-Type": "application/json" },
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      console.warn("Backend API unavailable, saving locally:", e.message);
-    }
-  }
-
   // Parse input fields if FormData was submitted
   let parsed = {};
   if (typeof FormData !== "undefined" && reportData instanceof FormData) {
@@ -321,10 +350,49 @@ export async function createReport(reportData, user) {
     parsed = { ...reportData };
   }
 
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const payload = {
+        title: parsed.title,
+        description: parsed.description,
+        type: parsed.type || "lost",
+        category: parsed.category,
+        location: parsed.location,
+        date: parsed.date || new Date().toISOString(),
+        images: parsed.imageUrl ? [parsed.imageUrl] : parsed.images || [],
+        status: parsed.type === "found" ? "active" : "active",
+        postedBy: {
+          userId: user?.id || user?._id || "user_current",
+          name: user?.name || "Findora Member",
+          email: user?.email || "",
+          image: user?.image || "/default-avatar.png",
+        },
+      };
+
+      const res = await fetch(`${apiBase}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const created = normalizeItem(json.data || json);
+        if (typeof window !== "undefined") {
+          const custom = getStoredCustomReports();
+          localStorage.setItem(STORAGE_KEY_CUSTOM_REPORTS, JSON.stringify([created, ...custom]));
+        }
+        return created;
+      }
+    } catch (e) {
+      console.warn("Backend API unavailable, saving locally:", e.message);
+    }
+  }
+
   const newId = `rep-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
   const now = new Date();
 
-  // Create new report object
+  // Create new report object locally as fallback
   const newReport = {
     id: newId,
     _id: newId,
@@ -368,7 +436,7 @@ export async function resolveReport(id) {
   const apiBase = process.env.NEXT_PUBLIC_API_URL;
   if (apiBase) {
     try {
-      const res = await fetch(`${apiBase}/reports/${id}/resolve`, { method: "PATCH" });
+      const res = await fetch(`${apiBase}/items/${id}/resolve`, { method: "PATCH" });
       if (res.ok) return await res.json();
     } catch {}
   }
@@ -389,7 +457,7 @@ export async function deleteReport(id) {
   const apiBase = process.env.NEXT_PUBLIC_API_URL;
   if (apiBase) {
     try {
-      const res = await fetch(`${apiBase}/reports/${id}`, { method: "DELETE" });
+      const res = await fetch(`${apiBase}/items/${id}`, { method: "DELETE" });
       if (res.ok) return await res.json();
     } catch {}
   }

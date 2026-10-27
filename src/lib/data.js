@@ -43,34 +43,9 @@ const FIRST = ["Amelia", "Marcus", "Priya", "Jonah", "Sofia", "Noah", "Elena", "
 const LAST = ["Novak", "Reyes", "Okafor", "Lindqvist", "Tanaka", "Moreau", "Petrov", "Nguyen", "Costa", "Weber", "Ali", "Fontaine", "Kim", "Berg", "Silva", "Marsh", "Duarte", "Hale", "Vidal", "Krause", "Amari", "Lowe", "Falke", "Ivers", "Nolan"];
 function pick(r, arr) { return arr[Math.floor(r() * arr.length)]; }
 export const NOW = Date.now();
-function generateItems() {
-  const r = mulberry32(20240817);
-  const items = []; let seq = 1000;
-  const catKeys = CATEGORIES.map((c) => c.key);
-  const catWeights = [0.22, 0.16, 0.14, 0.12, 0.1, 0.09, 0.065, 0.105];
-  const valueRange = { electronics: [80, 1200], keys: [5, 80], wallets: [20, 320], bags: [15, 260], documents: [0, 90], apparel: [10, 220], jewelry: [60, 1800], other: [5, 110] };
-  const locWeights = [0.22, 0.18, 0.14, 0.12, 0.11, 0.1, 0.07, 0.06];
-  const weighted = (weights) => { let x = r(); for (let i = 0; i < weights.length; i++) { if ((x -= weights[i]) <= 0) return i; } return weights.length - 1; };
-  for (let day = 364; day >= 0; day--) {
-    const t = 1 - day / 365; const dow = new Date(NOW - day * DAY).getDay();
-    const weekend = dow === 0 || dow === 6 ? 1.32 : 1; const monday = dow === 1 ? 1.1 : 1;
-    const base = 6.2 + t * 4.4; const count = Math.max(2, Math.round(base * weekend * monday + (r() - 0.5) * 4));
-    for (let k = 0; k < count; k++) {
-      const type = r() < 0.54 ? "lost" : "found"; const category = catKeys[weighted(catWeights)];
-      const location = LOCATIONS[weighted(locWeights)]; const hour = 7 + Math.floor(r() * 14);
-      const timestamp = NOW - day * DAY - (23 - hour) * 3_600_000 + Math.floor(r() * 3_000_000);
-      const ageDays = (NOW - timestamp) / DAY; const pReturned = Math.min(0.66, 0.12 + ageDays / 340);
-      const pMatched = 0.16 + Math.min(0.1, ageDays / 2400); const roll = r();
-      let status; if (roll < pReturned) status = "returned"; else if (roll < pReturned + pMatched) status = "matched"; else status = type === "lost" ? "pending" : "unclaimed";
-      const [lo, hi] = valueRange[category]; const value = Math.round((lo + r() * (hi - lo)) / 1);
-      const hoursToResolve = status === "returned" || status === "matched" ? Math.round(4 + Math.pow(r(), 1.8) * 150) : 0;
-      items.push({ id: `FD-${seq++}`, name: pick(r, NAMES[category]), type, category, location, timestamp, status, value, hoursToResolve, reporter: `${pick(r, FIRST)} ${pick(r, LAST)}` });
-    }
-  }
-  return items.sort((a, b) => b.timestamp - a.timestamp);
-}
-export const ALL_ITEMS = generateItems();
-export function bucketize(items, range) {
+export const ALL_ITEMS = [];
+
+export function bucketize(items = [], range = "30d") {
   const { days, bucket } = RANGES[range];
   const from = NOW - days * DAY; const buckets = [];
   if (bucket === "day") {

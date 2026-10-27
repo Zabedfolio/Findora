@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 
 import {
-  ALL_ITEMS,
   DAY,
   NOW,
   RANGES,
@@ -37,6 +36,7 @@ import CategoryBars from "@/components/dashboard/BarChart";
 import ProfileView from "@/components/dashboard/ProfileView";
 import ClaimsView from "@/components/dashboard/ClaimsView";
 import useAuth from "@/hooks/useAuth";
+import { getAllUnifiedReports, normalizeItem } from "@/services/reportService";
 
 const delta = (cur = 0, prev = 0) => {
   const c = Number(cur) || 0;
@@ -69,10 +69,61 @@ const QUICK_WORKSPACES = [
 ];
 
 function DashboardContent() {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [range, setRange] = useState("12m");
   const [segment, setSegment] = useState("all");
   const [location, setLocation] = useState("all");
+  const [userReports, setUserReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(true);
+
+  // Fetch live reports for current authenticated user
+  useEffect(() => {
+    let isMounted = true;
+    async function loadReports() {
+      try {
+        setLoadingReports(true);
+        const currentUserId = user?.id || user?._id;
+        const currentUserEmail = user?.email;
+        const apiBase = process.env.NEXT_PUBLIC_API_URL;
+
+        if (apiBase && (currentUserId || currentUserEmail)) {
+          const params = new URLSearchParams();
+          if (currentUserId) params.set("userId", currentUserId);
+          if (currentUserEmail) params.set("email", currentUserEmail);
+          const res = await fetch(`${apiBase}/items?${params.toString()}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (isMounted && Array.isArray(json?.data)) {
+              setUserReports(json.data.map(normalizeItem));
+              return;
+            }
+          }
+        }
+
+        const all = getAllUnifiedReports();
+        const userOnly = all.filter((item) => {
+          const ownerId = item.owner?._id || item.owner?.id;
+          const ownerEmail = item.owner?.email;
+          return (
+            item.isUserCreated ||
+            (currentUserId && ownerId === currentUserId) ||
+            (currentUserEmail && ownerEmail === currentUserEmail) ||
+            item.owner?.isCurrentUser
+          );
+        });
+        if (isMounted) setUserReports(userOnly);
+      } catch (e) {
+        console.warn("Could not load user dashboard items:", e);
+      } finally {
+        if (isMounted) setLoadingReports(false);
+      }
+    }
+
+    loadReports();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, user?.email]);
 
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -102,31 +153,48 @@ function DashboardContent() {
     window.history.pushState({}, "", url.toString());
   };
 
-  const days = RANGES[range].days;
+  const days = RANGES[range]?.days || 30;
   const windowStart = NOW - days * DAY;
+
+  // Transform user reports to dashboard item structure
+  const dashboardItems = useMemo(() => {
+    return userReports.map((r) => ({
+      id: r.id || r._id,
+      name: r.title,
+      title: r.title,
+      type: r.type || "lost",
+      category: (r.category || "other").toLowerCase(),
+      location: r.location || "Dhaka",
+      timestamp: r.dateRaw ? new Date(r.dateRaw).getTime() : Date.now(),
+      status: r.status === "resolved" ? "returned" : (r.status === "found" ? "matched" : "pending"),
+      value: 50,
+      hoursToResolve: r.status === "resolved" ? 12 : 0,
+      reporter: r.owner?.name || "You",
+    }));
+  }, [userReports]);
 
   const items = useMemo(
     () =>
-      ALL_ITEMS.filter(
+      dashboardItems.filter(
         (it) =>
           it.timestamp >= windowStart &&
-          it.timestamp <= NOW &&
+          it.timestamp <= NOW + 86400000 &&
           (segment === "all" || it.type === segment) &&
           (location === "all" || it.location === location)
       ),
-    [windowStart, segment, location]
+    [dashboardItems, windowStart, segment, location]
   );
 
   const prevItems = useMemo(
     () =>
-      ALL_ITEMS.filter(
+      dashboardItems.filter(
         (it) =>
           it.timestamp >= windowStart - days * DAY &&
           it.timestamp < windowStart &&
           (segment === "all" || it.type === segment) &&
           (location === "all" || it.location === location)
       ),
-    [windowStart, days, segment, location]
+    [dashboardItems, windowStart, days, segment, location]
   );
 
   const buckets = useMemo(() => bucketize(items, range), [items, range]);
@@ -196,6 +264,41 @@ function DashboardContent() {
           {/* TAB 3: ORIGINAL OVERVIEW & ANALYTICS VIEW */}
           {activeTab === "overview" && (
             <>
+              {/* Zero-State Welcome Card for Fresh Accounts */}
+              {userReports.length === 0 && !loadingReports && (
+                <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 sm:p-10 text-center shadow-xs">
+                  <div className="w-14 h-14 rounded-2xl bg-[#9ae600]/15 text-[#72a800] dark:text-[#9ae600] flex items-center justify-center mx-auto mb-3">
+                    <PackageSearch size={28} />
+                  </div>
+                  <h3 className="text-lg font-bold font-heading text-slate-950 dark:text-white">
+                    Welcome to Your Recovery Workspace
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1.5 leading-relaxed">
+                    You haven&apos;t filed any lost or found reports yet. As soon as you submit an item or claim a found possession, your recovery timelines and live return handovers will automatically appear here.
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-3 mt-5">
+                    <Link
+                      href="/reports/new?type=lost"
+                      className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-mono font-bold transition-all shadow-xs"
+                    >
+                      + Report Lost Item
+                    </Link>
+                    <Link
+                      href="/reports/new?type=found"
+                      className="px-4 py-2 rounded-xl bg-[#9ae600] hover:bg-[#86c800] text-black text-xs font-mono font-bold transition-all shadow-xs"
+                    >
+                      + Report Found Item
+                    </Link>
+                    <Link
+                      href="/reports"
+                      className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-mono font-bold transition-all"
+                    >
+                      Browse Community Directory
+                    </Link>
+                  </div>
+                </div>
+              )}
+
               {/* Filter Bar with Time range, Segments, and Location */}
               <FilterBar
                 range={range}
