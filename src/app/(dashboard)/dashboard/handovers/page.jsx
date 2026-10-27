@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import Link from "next/link";
 import {
   Handshake,
@@ -25,7 +25,7 @@ import HandoverProposalForm from "@/components/handover/HandoverProposalForm";
 import ReviewForm from "@/components/reviews/ReviewForm";
 import { getHandovers } from "@/services/handoverService";
 
-export default function HandoversDashboardPage() {
+function HandoversDashboardContent() {
   const { user } = useAuth();
   const [handovers, setHandovers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -399,5 +399,13 @@ export default function HandoversDashboardPage() {
       </p>
 
     </div>
+  );
+}
+
+export default function HandoversDashboardPage() {
+  return (
+    <Suspense fallback={null}>
+      <HandoversDashboardContent />
+    </Suspense>
   );
 }

@@ -64,29 +64,33 @@ export default function MyReportsPage() {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
 
       if (apiBase && (currentUserId || currentUserEmail)) {
-        const params = new URLSearchParams();
-        if (currentUserId) params.set("userId", currentUserId);
-        if (currentUserEmail) params.set("email", currentUserEmail);
-        const res = await fetch(`${apiBase}/items?${params.toString()}`);
-        if (res.ok) {
-          const json = await res.json();
-          if (Array.isArray(json?.data)) {
-            setReports(json.data.map((item) => ({
-              ...item,
-              id: item._id || item.id,
-              _id: item._id || item.id,
-              date: item.date ? new Date(item.date).toLocaleDateString() : "Recent",
-              dateRaw: item.date || item.createdAt,
-              imageUrl: item.images?.[0] || item.imageUrl || "/default-avatar.png",
-              owner: item.postedBy ? {
-                id: item.postedBy.userId,
-                name: item.postedBy.name,
-                email: item.postedBy.email,
-                image: item.postedBy.image,
-              } : (item.owner || { name: "You" }),
-            })));
-            return;
+        try {
+          const params = new URLSearchParams();
+          if (currentUserId) params.set("userId", currentUserId);
+          if (currentUserEmail) params.set("email", currentUserEmail);
+          const res = await fetch(`${apiBase}/items?${params.toString()}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (Array.isArray(json?.data)) {
+              setReports(json.data.map((item) => ({
+                ...item,
+                id: item._id || item.id,
+                _id: item._id || item.id,
+                date: item.date ? new Date(item.date).toLocaleDateString() : "Recent",
+                dateRaw: item.date || item.createdAt,
+                imageUrl: item.images?.[0] || item.imageUrl || "/default-avatar.png",
+                owner: item.postedBy ? {
+                  id: item.postedBy.userId,
+                  name: item.postedBy.name,
+                  email: item.postedBy.email,
+                  image: item.postedBy.image,
+                } : (item.owner || { name: "You" }),
+              })));
+              return;
+            }
           }
+        } catch (fetchErr) {
+          console.warn("Backend /items API fetch unreachable, falling back to local dataset:", fetchErr.message);
         }
       }
 
