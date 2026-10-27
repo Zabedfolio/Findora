@@ -18,6 +18,7 @@ import {
   Info,
 } from "lucide-react";
 import toast from "@/lib/toast";
+import useAuth from "@/hooks/useAuth";
 import { createHandoverProposal } from "@/services/handoverService";
 
 const PUBLIC_LOCATION_SUGGESTIONS = [
@@ -45,6 +46,7 @@ export default function HandoverProposalForm({
   onSubmitProposal,
   onSuccess,
 }) {
+  const { user } = useAuth();
   // Prevent selecting any dates before today
   const todayStr = new Date().toISOString().split("T")[0];
 
@@ -123,14 +125,18 @@ export default function HandoverProposalForm({
         location: location.trim(),
         safetyNote: safetyNote.trim() || "Please meet inside the public lobby next to security.",
         proposedBy: "owner",
-        owner: claim?.owner || {
-          name: claim?.claimantName || "Verified Owner",
-          avatar: claim?.claimantAvatar || "/default-avatar.png",
+        owner: claim?.owner || claim?.claimant || {
+          id: user?.id || user?._id || "usr_owner",
+          name: user?.name || claim?.claimantName || "Verified Owner",
+          email: user?.email || "owner@findora.app",
+          avatar: user?.avatar || claim?.claimantAvatar || "/default-avatar.png",
           role: "owner",
         },
         finder: claim?.finder || {
-          name: claim?.finderName || "Verified Finder",
-          avatar: claim?.finderAvatar || "/default-avatar.png",
+          id: claim?.finder?.id || claim?.finder?._id || "usr_finder",
+          name: claim?.finderName || claim?.finder?.name || "Verified Finder",
+          email: claim?.finder?.email || "finder@findora.app",
+          avatar: claim?.finderAvatar || claim?.finder?.avatar || "/default-avatar.png",
           role: "finder",
         },
       };

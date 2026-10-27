@@ -77,7 +77,7 @@ export default function AdminHandoversOversightPage() {
   const loadHandovers = async () => {
     try {
       setLoading(true);
-      const data = await getHandovers("all");
+      const data = await getHandovers("all", null, true);
       setHandovers(data.all || []);
     } catch (err) {
       console.error("Failed to load handovers for admin oversight:", err);

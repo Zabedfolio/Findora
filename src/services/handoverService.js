@@ -2,200 +2,7 @@ import { resolveReport } from "./reportService";
 
 const STORAGE_KEY = "findora_handovers_store";
 
-// Initial realistic demo handovers
-const INITIAL_DEMO_HANDOVERS = [
-  {
-    _id: "hnd_001",
-    claimId: "clm_101",
-    reportId: "rep_lost_01",
-    itemTitle: "Apple MacBook Pro 16\" (M3 Max)",
-    itemCategory: "Electronics",
-    itemThumbnail: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=400&q=80",
-    owner: {
-      id: "usr_owner_01",
-      name: "Zabed Mahmud",
-      email: "zabed@findora.app",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-      role: "owner",
-    },
-    finder: {
-      id: "usr_finder_01",
-      name: "Tariqul Islam",
-      email: "tariqul@gmail.com",
-      phone: "+880 1819-234567",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-      role: "finder",
-    },
-    proposedBy: "finder",
-    meetingDate: "2026-10-29",
-    timeSlot: "04:30 PM - 05:30 PM",
-    location: "Dhanmondi Police Station, Main Reception Lobby",
-    safetyNote: "Meet inside the police station lobby near the visitor inquiry counter.",
-    status: "proposed", // 'proposed' | 'confirmed' | 'completed'
-    confirmations: {
-      ownerConfirmed: false,
-      finderConfirmed: true,
-    },
-    history: [
-      {
-        at: "2026-10-26T10:00:00Z",
-        by: "Tariqul Islam",
-        action: "Proposed handover at Dhanmondi Police Station",
-      },
-    ],
-    adminWarnings: [],
-    suspiciousFlags: [],
-    createdAt: "2026-10-26T10:00:00Z",
-    updatedAt: "2026-10-26T10:00:00Z",
-  },
-  {
-    _id: "hnd_002",
-    claimId: "clm_102",
-    reportId: "rep_found_02",
-    itemTitle: "Leather Bi-fold Wallet with Canadian PR Card",
-    itemCategory: "Documents & Wallets",
-    itemThumbnail: "https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=400&q=80",
-    owner: {
-      id: "usr_owner_02",
-      name: "Rahim Chowdhury",
-      email: "rahim@findora.app",
-      phone: "+880 1711-987654",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
-      role: "owner",
-    },
-    finder: {
-      id: "usr_finder_02",
-      name: "Sarah Jenkins",
-      email: "sarah.j@gmail.com",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
-      role: "finder",
-    },
-    proposedBy: "owner",
-    meetingDate: "2026-10-28",
-    timeSlot: "02:00 PM - 03:00 PM",
-    location: "Bashundhara City Mall, Customer Service Desk (Level 1)",
-    safetyNote: "Public information desk area, verified ID badge will be presented.",
-    status: "confirmed",
-    confirmations: {
-      ownerConfirmed: true,
-      finderConfirmed: false,
-    },
-    history: [
-      {
-        at: "2026-10-25T14:30:00Z",
-        by: "Rahim Chowdhury",
-        action: "Proposed meeting at Bashundhara City Mall",
-      },
-      {
-        at: "2026-10-25T15:10:00Z",
-        by: "Sarah Jenkins",
-        action: "Accepted meeting proposal",
-      },
-      {
-        at: "2026-10-26T09:00:00Z",
-        by: "Rahim Chowdhury",
-        action: "Signed recipient confirmation (1/2)",
-      },
-    ],
-    adminWarnings: [],
-    suspiciousFlags: [],
-    createdAt: "2026-10-25T14:30:00Z",
-    updatedAt: "2026-10-26T09:00:00Z",
-  },
-  {
-    _id: "hnd_004",
-    claimId: "clm_104",
-    reportId: "rep_lost_04",
-    itemTitle: "Gold Chain with Diamond Pendant",
-    itemCategory: "Jewelry & Watches",
-    itemThumbnail: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=400&q=80",
-    owner: {
-      id: "usr_owner_04",
-      name: "Mst. Farhana Yasmin",
-      email: "farhana@gmail.com",
-      phone: "+880 1811-223344",
-      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150",
-      role: "owner",
-    },
-    finder: {
-      id: "usr_finder_04",
-      name: "Tanvir Hasan",
-      email: "tanvir.h@yahoo.com",
-      phone: "+880 1622-778899",
-      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150",
-      role: "finder",
-    },
-    proposedBy: "finder",
-    meetingDate: "2026-10-31",
-    timeSlot: "11:45 PM - 12:30 AM",
-    location: "Behind Old Bus Depot, Dark Alley Way",
-    safetyNote: "Come alone without phone or police.",
-    status: "proposed",
-    confirmations: {
-      ownerConfirmed: false,
-      finderConfirmed: true,
-    },
-    history: [
-      {
-        at: "2026-10-26T18:00:00Z",
-        by: "Tanvir Hasan",
-        action: "Proposed suspicious night exchange at isolated location",
-      },
-    ],
-    suspiciousFlags: [
-      "Late night meeting (11:45 PM)",
-      "Isolated / unverified private location",
-      "High-value jewelry risk trigger",
-    ],
-    adminWarnings: [],
-    createdAt: "2026-10-26T18:00:00Z",
-    updatedAt: "2026-10-26T18:00:00Z",
-  },
-  {
-    _id: "hnd_003",
-    claimId: "clm_103",
-    reportId: "rep_lost_03",
-    itemTitle: "Sony WH-1000XM5 Wireless Headphones",
-    itemCategory: "Electronics",
-    itemThumbnail: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80",
-    owner: {
-      id: "usr_owner_03",
-      name: "Zabed Mahmud",
-      email: "zabed@findora.app",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-      role: "owner",
-    },
-    finder: {
-      id: "usr_finder_03",
-      name: "Nafis Fuad",
-      email: "nafis@gmail.com",
-      phone: "+880 1912-334455",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
-      role: "finder",
-    },
-    proposedBy: "finder",
-    meetingDate: "2026-10-24",
-    timeSlot: "11:00 AM - 12:00 PM",
-    location: "Metro Rail Station Agargaon (Exit A Concourse)",
-    safetyNote: "Inside ticket gate area under CCTV coverage.",
-    status: "completed",
-    confirmations: {
-      ownerConfirmed: true,
-      finderConfirmed: true,
-    },
-    history: [
-      { at: "2026-10-23T11:00:00Z", by: "Nafis Fuad", action: "Proposed meeting" },
-      { at: "2026-10-23T12:00:00Z", by: "Zabed Mahmud", action: "Accepted proposal" },
-      { at: "2026-10-24T12:05:00Z", by: "Both Parties", action: "Confirmed exchange & reunited" },
-    ],
-    completedAt: "2026-10-24T12:05:00Z",
-    ratingsUnlocked: true,
-    adminWarnings: [],
-    suspiciousFlags: [],
-    createdAt: "2026-10-23T11:00:00Z",
-    updatedAt: "2026-10-24T12:05:00Z",
-  },
-];
+const INITIAL_DEMO_HANDOVERS = [];
 
 /**
  * Read handovers store with fallback to mock data
@@ -228,22 +35,64 @@ function saveStore(handovers) {
 }
 
 /**
- * Fetch all handovers categorized by status
+ * Fetch all handovers categorized by status and filtered by user
  */
-export async function getHandovers(filter = "all") {
+export async function getHandovers(filter = "all", currentUser = null, isAdmin = false) {
   const all = getStore();
 
-  const upcoming = all.filter(
+  let targetList = all;
+
+  // Unless admin, strictly filter handovers for the authenticated user
+  if (!isAdmin) {
+    if (!currentUser) {
+      return {
+        all: [],
+        upcoming: [],
+        past: [],
+        suspicious: [],
+        counts: {
+          all: 0,
+          upcoming: 0,
+          past: 0,
+          proposed: 0,
+          confirmed: 0,
+          completed: 0,
+          suspicious: 0,
+        },
+      };
+    }
+
+    const currentUserId = String(currentUser.id || currentUser._id || "").toLowerCase();
+    const currentUserEmail = String(currentUser.email || "").toLowerCase();
+
+    targetList = all.filter((h) => {
+      const ownerId = String(h.owner?.id || h.owner?._id || "").toLowerCase();
+      const ownerEmail = String(h.owner?.email || "").toLowerCase();
+      const finderId = String(h.finder?.id || h.finder?._id || "").toLowerCase();
+      const finderEmail = String(h.finder?.email || "").toLowerCase();
+
+      const isOwner =
+        (currentUserId && ownerId === currentUserId) ||
+        (currentUserEmail && ownerEmail === currentUserEmail);
+      const isFinder =
+        (currentUserId && finderId === currentUserId) ||
+        (currentUserEmail && finderEmail === currentUserEmail);
+
+      return isOwner || isFinder;
+    });
+  }
+
+  const upcoming = targetList.filter(
     (h) => h.status === "proposed" || h.status === "confirmed"
   );
-  const past = all.filter(
+  const past = targetList.filter(
     (h) => h.status === "completed" || h.status === "reunited"
   );
-  const suspicious = all.filter(
+  const suspicious = targetList.filter(
     (h) => (h.suspiciousFlags && h.suspiciousFlags.length > 0) || h.hasWarning
   );
 
-  let filtered = all;
+  let filtered = targetList;
   if (filter === "upcoming") {
     filtered = upcoming;
   } else if (filter === "past" || filter === "completed") {
@@ -258,11 +107,11 @@ export async function getHandovers(filter = "all") {
     past,
     suspicious,
     counts: {
-      all: all.length,
+      all: targetList.length,
       upcoming: upcoming.length,
       past: past.length,
-      proposed: all.filter((h) => h.status === "proposed").length,
-      confirmed: all.filter((h) => h.status === "confirmed").length,
+      proposed: targetList.filter((h) => h.status === "proposed").length,
+      confirmed: targetList.filter((h) => h.status === "confirmed").length,
       completed: past.length,
       suspicious: suspicious.length,
     },
