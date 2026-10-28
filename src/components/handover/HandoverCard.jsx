@@ -284,7 +284,7 @@ export default function HandoverCard({
   };
 
   return (
-    <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-lg transition-all duration-200 relative overflow-hidden flex flex-col justify-between gap-5">
+    <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-lg transition-all duration-200 relative overflow-hidden flex flex-col justify-start gap-5 h-fit self-start w-full">
       {/* Background glow */}
       <div className="absolute -top-16 -right-16 w-36 h-36 bg-[#9ae600]/10 rounded-full blur-2xl pointer-events-none" />
 
