@@ -215,16 +215,11 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-5">
-      {/* Top Header */}
+      {/* Subheader with Description & Sync Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold font-heading text-slate-950 dark:text-white">
-            User Directory &amp; Access Control
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Real database members registered on Findora with role permissions and access security.
-          </p>
-        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Real database members registered on Findora with role permissions and access security.
+        </p>
 
         <button
           type="button"

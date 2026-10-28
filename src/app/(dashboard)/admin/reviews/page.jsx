@@ -227,16 +227,11 @@ export default function AdminReviewsPage() {
 
   return (
     <div className="space-y-5">
-      {/* Top Header */}
+      {/* Subheader with Description & Sync Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold font-heading text-slate-950 dark:text-white">
-            Community Reviews Moderation
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Audit verified feedback and ratings submitted after completed handovers.
-          </p>
-        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Audit verified feedback and ratings submitted after completed handovers.
+        </p>
 
         <button
           type="button"
