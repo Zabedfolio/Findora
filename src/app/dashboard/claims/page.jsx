@@ -523,9 +523,9 @@ function ClaimantClaimsContent() {
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            {/* Status Segmented Tabs */}
-                            <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            {/* Status Segmented Tabs (Never wraps awkwardly, stays on single clean strip) */}
+                            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
                                 {[
                                     { key: "all", label: "All Status", count: counts.all },
                                     { key: "actionable", label: "Action Required / Ready", count: counts.in_handover + counts.needs_info },
@@ -538,7 +538,7 @@ function ClaimantClaimsContent() {
                                         <button
                                             key={tab.key}
                                             onClick={() => setActiveTab(tab.key)}
-                                            className={`relative flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all ${isActive
+                                            className={`relative flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${isActive
                                                     ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-950"
                                                     : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
                                                 }`}
@@ -559,10 +559,10 @@ function ClaimantClaimsContent() {
                                 })}
                             </div>
 
-                            {/* Search & Select Options */}
-                            <div className="flex flex-wrap items-center gap-2.5">
-                                {/* Search Bar */}
-                                <div className="relative flex-1 sm:w-64 sm:flex-initial">
+                            {/* Search & Filter Controls: Search on top, Categories and Sort Order below side-by-side */}
+                            <div className="flex flex-col gap-2 w-full sm:w-80 lg:w-80 shrink-0">
+                                {/* Search Bar (Top) */}
+                                <div className="relative w-full">
                                     <Search
                                         size={14}
                                         className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -572,40 +572,44 @@ function ClaimantClaimsContent() {
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder="Search claims or finder..."
-                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs text-slate-900 placeholder-slate-400 outline-none transition focus:border-indigo-500 focus:bg-white dark:border-white/10 dark:bg-ink-800 dark:text-white dark:placeholder-slate-500 dark:focus:border-indigo-400"
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-8 text-xs text-slate-900 placeholder-slate-400 outline-none transition focus:border-indigo-500 focus:bg-white dark:border-white/10 dark:bg-ink-800 dark:text-white dark:placeholder-slate-500 dark:focus:border-indigo-400"
                                     />
                                     {searchQuery && (
                                         <button
+                                            type="button"
                                             onClick={() => setSearchQuery("")}
-                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
                                         >
                                             <X size={13} />
                                         </button>
                                     )}
                                 </div>
 
-                                {/* Category Select */}
-                                <select
-                                    value={selectedCategory}
-                                    onChange={(e) => setSelectedCategory(e.target.value)}
-                                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 outline-none transition focus:border-indigo-500 dark:border-white/10 dark:bg-ink-800 dark:text-slate-200"
-                                >
-                                    {CATEGORIES.map((cat) => (
-                                        <option key={cat} value={cat}>
-                                            {cat}
-                                        </option>
-                                    ))}
-                                </select>
+                                {/* Dropdowns Row (Bottom): Categories & Newest first side-by-side */}
+                                <div className="grid grid-cols-2 gap-2 w-full">
+                                    {/* Category Select */}
+                                    <select
+                                        value={selectedCategory}
+                                        onChange={(e) => setSelectedCategory(e.target.value)}
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none transition focus:border-indigo-500 dark:border-white/10 dark:bg-ink-800 dark:text-slate-200 truncate cursor-pointer"
+                                    >
+                                        {CATEGORIES.map((cat) => (
+                                            <option key={cat} value={cat}>
+                                                {cat}
+                                            </option>
+                                        ))}
+                                    </select>
 
-                                {/* Sort Order */}
-                                <select
-                                    value={sortOrder}
-                                    onChange={(e) => setSortOrder(e.target.value)}
-                                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 outline-none transition focus:border-indigo-500 dark:border-white/10 dark:bg-ink-800 dark:text-slate-200"
-                                >
-                                    <option value="newest">Newest first</option>
-                                    <option value="oldest">Oldest first</option>
-                                </select>
+                                    {/* Sort Order */}
+                                    <select
+                                        value={sortOrder}
+                                        onChange={(e) => setSortOrder(e.target.value)}
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none transition focus:border-indigo-500 dark:border-white/10 dark:bg-ink-800 dark:text-slate-200 cursor-pointer"
+                                    >
+                                        <option value="newest">Newest first</option>
+                                        <option value="oldest">Oldest first</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
