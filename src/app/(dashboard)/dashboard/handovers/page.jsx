@@ -55,6 +55,7 @@ function HandoversDashboardContent() {
   }, [user]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadHandovers();
   }, [loadHandovers]);
 
@@ -63,7 +64,13 @@ function HandoversDashboardContent() {
     return handovers.filter((h) => {
       // Tab filter
       if (activeTab === "upcoming") {
-        if (h.status !== "proposed" && h.status !== "confirmed") return false;
+        if (
+          h.status !== "pending_proposal" &&
+          h.status !== "proposed" &&
+          h.status !== "counter_proposed" &&
+          h.status !== "confirmed"
+        )
+          return false;
       } else if (activeTab === "past") {
         if (h.status !== "completed" && h.status !== "reunited") return false;
       }
@@ -87,7 +94,11 @@ function HandoversDashboardContent() {
   const counts = useMemo(() => {
     const total = handovers.length;
     const upcoming = handovers.filter(
-      (h) => h.status === "proposed" || h.status === "confirmed"
+      (h) =>
+        h.status === "pending_proposal" ||
+        h.status === "proposed" ||
+        h.status === "counter_proposed" ||
+        h.status === "confirmed"
     ).length;
     const confirmed = handovers.filter((h) => h.status === "confirmed").length;
     const completed = handovers.filter(
@@ -148,17 +159,9 @@ function HandoversDashboardContent() {
   return (
     <div className="space-y-6">
       
-      {/* 1. Header & Primary Action */}
+      {/* 1. Subheader & Primary Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-heading text-slate-950 dark:text-white tracking-tight">
-              Safe Handovers &amp; Return Meetings
-            </h1>
-            <span className="rounded-full bg-[#9ae600]/20 text-[#689c00] dark:text-[#9ae600] border border-[#9ae600]/40 text-xs font-mono font-bold px-2.5 py-0.5">
-              PHASE 6 &amp; 7
-            </span>
-          </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
             Coordinate verified physical meeting locations, exchange custody with two-party confirmation, and unlock member reputation reviews.
           </p>
@@ -309,12 +312,20 @@ function HandoversDashboardContent() {
           ))}
         </div>
       ) : filteredHandovers.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
           {filteredHandovers.map((item) => {
-            const isFinder =
-              (user?.id && (item.finder?.id === user.id || item.finder?.id === user._id)) ||
-              (user?.email && item.finder?.email?.toLowerCase() === user.email?.toLowerCase());
-            const role = isFinder ? "finder" : "owner";
+            const currentUserId = user?.id || user?._id || user?.userId;
+            const currentUserEmail = (user?.email || "").toLowerCase();
+
+            const isFinder = Boolean(
+              (currentUserId && (
+                item.finder?.userId === currentUserId ||
+                item.finder?.id === currentUserId ||
+                item.finder?._id === currentUserId
+              )) ||
+              (currentUserEmail && item.finder?.email?.toLowerCase() === currentUserEmail)
+            );
+            const role = isFinder ? "finder" : "receiver";
 
             return (
               <HandoverCard

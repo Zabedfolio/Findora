@@ -78,8 +78,23 @@ export function bucketize(items = [], range = "30d") {
   }
   const edges = buckets.map((b) => b.start);
   for (const it of items || []) {
-    const ts = Number(it?.timestamp) || (it?.dateRaw ? new Date(it.dateRaw).getTime() : 0);
-    if (!ts || ts < from) continue;
+    let ts = 0;
+    if (it?.timestamp && !isNaN(Number(it.timestamp))) {
+      ts = Number(it.timestamp);
+    } else if (it?.dateRaw) {
+      ts = new Date(it.dateRaw).getTime();
+    } else if (it?.date) {
+      ts = new Date(it.date).getTime();
+    } else if (it?.createdAt) {
+      ts = new Date(it.createdAt).getTime();
+    } else if (it?.updatedAt) {
+      ts = new Date(it.updatedAt).getTime();
+    }
+
+    if (!ts || isNaN(ts)) {
+      ts = currentNow;
+    }
+    if (ts < from) continue;
     let bi = edges.length - 1;
     for (let i = 0; i < edges.length - 1; i++) {
       if (ts < edges[i + 1]) {

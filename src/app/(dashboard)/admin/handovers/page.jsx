@@ -88,6 +88,7 @@ export default function AdminHandoversOversightPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadHandovers();
   }, []);
 
@@ -233,28 +234,14 @@ export default function AdminHandoversOversightPage() {
 
   return (
     <div className="space-y-8 pb-16">
-      {/* HEADER & OVERSIGHT BANNER */}
+      {/* Description & Action Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-              <ShieldAlert size={13} />
-              Trust &amp; Safety Oversight
-            </span>
-            <span className="text-xs font-mono text-slate-400">
-              Live Exchange Audit
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white font-heading tracking-tight">
-            Handover Safety Monitoring
-          </h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 max-w-2xl mt-1">
-            Handovers are auto-approved between Finder and Receiver upon mutual
-            confirmation without requiring admin approval. Monitor public meeting
-            spots, identify risky exchanges, and send targeted warnings to either
-            party.
-          </p>
-        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-2xl">
+          Handovers are auto-approved between Finder and Receiver upon mutual
+          confirmation without requiring admin approval. Monitor public meeting
+          spots, identify risky exchanges, and send targeted warnings to either
+          party.
+        </p>
 
         {/* REFRESH */}
         <button

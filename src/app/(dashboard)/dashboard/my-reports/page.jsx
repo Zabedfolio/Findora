@@ -117,6 +117,7 @@ export default function MyReportsPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchUserReports();
   }, [user?.id, user?.email]);
 
@@ -284,15 +285,7 @@ export default function MyReportsPage() {
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl sm:text-3xl font-black font-heading tracking-tight text-slate-950 dark:text-white">
-                    My Reports
-                  </h1>
-                  <span className="rounded-full bg-[#9ae600]/15 px-2.5 py-0.5 text-xs font-mono font-bold text-[#72a800] dark:text-[#9ae600] border border-[#9ae600]/30">
-                    {reports.length} Total
-                  </span>
-                </div>
-                <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                   Filter and manage reports you posted, update their resolution status, or edit report details.
                 </p>
               </div>
@@ -893,7 +886,7 @@ export default function MyReportsPage() {
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   Are you sure you want to remove{" "}
                   <span className="font-semibold text-slate-900 dark:text-white">
-                    "{deleteTarget.title}"
+                    &ldquo;{deleteTarget.title}&rdquo;
                   </span>
                   ? This will delete the listing from community searches and active match radars.
                 </p>

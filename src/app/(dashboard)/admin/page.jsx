@@ -48,6 +48,7 @@ export default function AdminOverviewPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAdminMetrics();
   }, []);
 
@@ -66,21 +67,18 @@ export default function AdminOverviewPage() {
   const resolvedCount = metrics?.resolvedCount ?? localReports.filter((r) => r.status === "resolved").length;
   const recoveryRate = metrics?.recoveryRate ?? (totalReports > 0 ? Math.round((resolvedCount / totalReports) * 100) : 0);
 
-  // Dynamic recent items
-  const recentItems = metrics?.recentListings || localReports.slice(0, 10);
+  // Dynamic items for platform telemetry
+  const allPlatformItems = metrics?.allListings?.length
+    ? metrics.allListings
+    : localReports;
 
   return (
     <div className="space-y-6">
-      {/* Top Bar with Refresh & Telemetry Badge */}
+      {/* Subheader with Description & Sync Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold font-heading text-slate-950 dark:text-white">
-            Admin Overview &amp; Telemetry
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Real-time platform metrics, security telemetry, and recovery analytics across Findora.
-          </p>
-        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Real-time platform metrics, security telemetry, and recovery analytics across Findora.
+        </p>
 
         <button
           onClick={fetchAdminMetrics}
@@ -177,12 +175,12 @@ export default function AdminOverviewPage() {
 
       {/* Hotspots Section */}
       <section aria-labelledby="hotspot-analysis-heading">
-        <TopLocationsList />
+        <TopLocationsList locations={metrics?.topLocations} />
       </section>
 
       {/* Recovery Trends & Category Breakdown Charts */}
       <section aria-labelledby="analytics-charts-heading">
-        <RecoveryCharts items={recentItems.length > 0 ? recentItems : localReports} />
+        <RecoveryCharts items={allPlatformItems} />
       </section>
     </div>
   );

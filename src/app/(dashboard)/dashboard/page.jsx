@@ -137,9 +137,10 @@ function DashboardContent() {
   useEffect(() => {
     const target = resolveTab(tabParam);
     if (target !== activeTab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(target);
     }
-  }, [tabParam]);
+  }, [tabParam, activeTab]);
 
   const handleSelectTab = (tabId) => {
     const resolved = resolveTab(tabId);
@@ -165,7 +166,7 @@ function DashboardContent() {
       type: r.type || "lost",
       category: (r.category || "other").toLowerCase(),
       location: r.location || "Dhaka",
-      timestamp: r.dateRaw ? new Date(r.dateRaw).getTime() : Date.now(),
+      timestamp: r.dateRaw ? new Date(r.dateRaw).getTime() : NOW,
       status: r.status === "resolved" ? "returned" : (r.status === "found" ? "matched" : "pending"),
       value: 50,
       hoursToResolve: r.status === "resolved" ? 12 : 0,
