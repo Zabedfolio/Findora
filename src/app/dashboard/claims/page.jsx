@@ -46,6 +46,8 @@ import {
     markClaimReunited,
     submitAdditionalProof,
     cancelClaim,
+    approveClaim,
+    rejectClaim,
 } from "@/services/claimService";
 
 // Data layer                                                      
@@ -157,6 +159,28 @@ function ClaimantClaimsContent() {
     const [abuseTarget, setAbuseTarget] = useState({ id: "", title: "" });
     const [copiedCode, setCopiedCode] = useState(null);
 
+    // Finder approval & rejection modal states
+    const [approveModalClaim, setApproveModalClaim] = useState(null);
+    const [rejectModalClaim, setRejectModalClaim] = useState(null);
+    const [decisionNote, setDecisionNote] = useState("");
+    const [actionInProgress, setActionInProgress] = useState(null);
+    const [roleFilter, setRoleFilter] = useState("all"); // 'all' | 'incoming' | 'outgoing'
+
+    const currentUserId = user?.id || user?._id || user?.userId;
+    const currentUserEmail = (user?.email || "").toLowerCase();
+
+    const getClaimRole = useCallback((claim) => {
+        const isFinder = Boolean(
+            (currentUserId && (claim.finder?.userId === currentUserId || claim.finder?.id === currentUserId || claim.finder?._id === currentUserId)) ||
+            (currentUserEmail && claim.finder?.email?.toLowerCase() === currentUserEmail)
+        );
+        const isClaimant = Boolean(
+            (currentUserId && (claim.claimant?.userId === currentUserId || claim.claimant?.id === currentUserId || claim.claimant?._id === currentUserId)) ||
+            (currentUserEmail && claim.claimant?.email?.toLowerCase() === currentUserEmail)
+        );
+        return { isFinder, isClaimant };
+    }, [currentUserId, currentUserEmail]);
+
     // Theme synchronization
     useEffect(() => {
         document.documentElement.classList.toggle("light", light);
@@ -207,6 +231,7 @@ function ClaimantClaimsContent() {
     }, [activeTab, searchQuery, selectedCategory, sortOrder, initialClaimId, initialView, user]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadClaimsData();
     }, [loadClaimsData]);
 
@@ -268,6 +293,58 @@ function ClaimantClaimsContent() {
         }
     };
 
+    // Finder Approve Action
+    const handleConfirmApprove = async () => {
+        if (!approveModalClaim) return;
+        try {
+            setActionInProgress(approveModalClaim.id);
+            await approveClaim(approveModalClaim.id, decisionNote.trim());
+            toast.success("Claim approved! Safe Handover proposal initialized.");
+            setApproveModalClaim(null);
+            setDecisionNote("");
+            await loadClaimsData();
+        } catch (err) {
+            toast.error(err?.message || "Failed to approve claim.");
+        } finally {
+            setActionInProgress(null);
+        }
+    };
+
+    // Finder Reject Action
+    const handleConfirmReject = async () => {
+        if (!rejectModalClaim) return;
+        try {
+            setActionInProgress(rejectModalClaim.id);
+            await rejectClaim(rejectModalClaim.id, decisionNote.trim() || "Proof details did not match.");
+            toast.info("Claim declined.");
+            setRejectModalClaim(null);
+            setDecisionNote("");
+            await loadClaimsData();
+        } catch (err) {
+            toast.error(err?.message || "Failed to decline claim.");
+        } finally {
+            setActionInProgress(null);
+        }
+    };
+
+    const incomingCount = useMemo(() => {
+        return claims.filter((c) => getClaimRole(c).isFinder).length;
+    }, [claims, getClaimRole]);
+
+    const outgoingCount = useMemo(() => {
+        return claims.filter((c) => getClaimRole(c).isClaimant).length;
+    }, [claims, getClaimRole]);
+
+    const displayedClaims = useMemo(() => {
+        if (roleFilter === "incoming") {
+            return claims.filter((c) => getClaimRole(c).isFinder);
+        }
+        if (roleFilter === "outgoing") {
+            return claims.filter((c) => getClaimRole(c).isClaimant);
+        }
+        return claims;
+    }, [claims, roleFilter, getClaimRole]);
+
     // KPI Metrics Calculation
     const kpis = useMemo(() => {
         const total = counts.all || claims.length;
@@ -297,9 +374,9 @@ function ClaimantClaimsContent() {
                         light={light}
                         onToggleTheme={() => setLight((cur) => !cur)}
                         onOpenMenu={() => setMenuOpen(true)}
-                        section="Claimant Workspace"
-                        title="My Claimed Items & Handover"
-                        badge="TRACKER"
+                        section="Claims & Verification"
+                        title="Claims Management & Handover"
+                        badge="VERIFICATION"
                     />
 
                     {/* Page Banner / Hero Headline */}
@@ -310,14 +387,14 @@ function ClaimantClaimsContent() {
                                     <ShieldCheck size={18} strokeWidth={2.3} />
                                 </span>
                                 <span className="text-xs font-bold uppercase tracking-wider text-[#639400] dark:text-[#9ae600]">
-                                    Claimant Resolution Center
+                                    Claims &amp; Verification Hub
                                 </span>
                             </div>
                             <h1 className="font-display mt-2 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl dark:text-white">
-                                Track Claimed Belongings &amp; Verification Status
+                                Manage Ownership Claims &amp; Verification Status
                             </h1>
                             <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                                Monitor finder reviews, private proof verification, designated safe pickup spots, and direct handover codes in real time.
+                                Review incoming claims on items you found, approve legitimate owners to initiate safe handovers, and track your submitted claims.
                             </p>
                         </div>
 
@@ -351,7 +428,7 @@ function ClaimantClaimsContent() {
                             <p className="tnum font-display mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                                 {kpis.total}
                             </p>
-                            <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">Items you claimed</p>
+                            <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">Incoming &amp; submitted</p>
                         </div>
 
                         <div className="rounded-2xl border border-emerald-500/20 bg-emerald-50/40 p-4 shadow-xs backdrop-blur-sm dark:border-emerald-500/20 dark:bg-emerald-950/20">
@@ -395,12 +472,62 @@ function ClaimantClaimsContent() {
                     </div>
 
                     {/* Filtering & Search Toolbar */}
-                    <div className="mb-6 rounded-3xl border border-slate-200/80 bg-white/95 p-4 shadow-xs backdrop-blur dark:border-white/10 dark:bg-ink-900/90 sm:p-5">
+                    <div className="mb-6 rounded-3xl border border-slate-200/80 bg-white/95 p-4 shadow-xs backdrop-blur dark:border-white/10 dark:bg-ink-900/90 sm:p-5 space-y-4">
+                        {/* Role Filter Selector */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3 dark:border-white/5">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1">
+                                    Filter by role:
+                                </span>
+                                <button
+                                    onClick={() => setRoleFilter("all")}
+                                    className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                                        roleFilter === "all"
+                                            ? "bg-slate-900 text-white shadow-xs dark:bg-white dark:text-slate-950"
+                                            : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/10"
+                                    }`}
+                                >
+                                    <span>All Claims</span>
+                                    <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${roleFilter === "all" ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-950" : "bg-slate-200/70 text-slate-700 dark:bg-white/10 dark:text-slate-300"}`}>
+                                        {claims.length}
+                                    </span>
+                                </button>
+                                <button
+                                    onClick={() => setRoleFilter("incoming")}
+                                    className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                                        roleFilter === "incoming"
+                                            ? "bg-emerald-600 text-white shadow-xs"
+                                            : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 dark:text-slate-300 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-300"
+                                    }`}
+                                >
+                                    <ShieldCheck size={13} />
+                                    <span>Incoming on My Items (As Finder)</span>
+                                    <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${roleFilter === "incoming" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"}`}>
+                                        {incomingCount}
+                                    </span>
+                                </button>
+                                <button
+                                    onClick={() => setRoleFilter("outgoing")}
+                                    className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                                        roleFilter === "outgoing"
+                                            ? "bg-blue-600 text-white shadow-xs"
+                                            : "text-slate-600 hover:bg-blue-50 hover:text-blue-800 dark:text-slate-300 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                                    }`}
+                                >
+                                    <User size={13} />
+                                    <span>My Submitted Claims</span>
+                                    <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${roleFilter === "outgoing" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"}`}>
+                                        {outgoingCount}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                             {/* Status Segmented Tabs */}
                             <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
                                 {[
-                                    { key: "all", label: "All Claims", count: counts.all },
+                                    { key: "all", label: "All Status", count: counts.all },
                                     { key: "actionable", label: "Action Required / Ready", count: counts.in_handover + counts.needs_info },
                                     { key: "pending", label: "Under Review", count: counts.pending },
                                     { key: "reunited", label: "Reunited", count: counts.reunited },
@@ -489,25 +616,26 @@ function ClaimantClaimsContent() {
                             <div className="h-10 w-10 animate-spin rounded-full border-3 border-indigo-500 border-t-transparent" />
                             <p className="mt-4 text-xs font-semibold text-slate-400">Loading your claims...</p>
                         </div>
-                    ) : claims.length === 0 ? (
+                    ) : displayedClaims.length === 0 ? (
                         /* Empty State */
                         <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white/50 px-6 py-16 text-center dark:border-white/10 dark:bg-ink-900/40">
                             <div className="grid h-16 w-16 place-items-center rounded-2xl bg-indigo-50 text-indigo-500 dark:bg-indigo-500/10 dark:text-indigo-400">
                                 <PackageCheck size={32} strokeWidth={1.7} />
                             </div>
                             <h3 className="font-display mt-4 text-base font-bold text-slate-900 dark:text-white">
-                                No claimed items found
+                                No claims found
                             </h3>
                             <p className="mt-1.5 max-w-md text-xs text-slate-500 dark:text-slate-400">
-                                {searchQuery || activeTab !== "all" || selectedCategory !== "All Categories"
-                                    ? "No claims match your selected filters. Try resetting your search parameters."
-                                    : "You haven't submitted any ownership claims yet. Browse found listings to claim an item that matches your lost belongings."}
+                                {searchQuery || activeTab !== "all" || roleFilter !== "all" || selectedCategory !== "All Categories"
+                                    ? "No claims match your selected filters. Try resetting your filter parameters."
+                                    : "No ownership claims found in this category."}
                             </p>
                             <div className="mt-5 flex items-center gap-3">
-                                {(searchQuery || activeTab !== "all" || selectedCategory !== "All Categories") && (
+                                {(searchQuery || activeTab !== "all" || roleFilter !== "all" || selectedCategory !== "All Categories") && (
                                     <button
                                         onClick={() => {
                                             setActiveTab("all");
+                                            setRoleFilter("all");
                                             setSearchQuery("");
                                             setSelectedCategory("All Categories");
                                         }}
@@ -527,12 +655,13 @@ function ClaimantClaimsContent() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {claims.map((claim) => {
+                            {displayedClaims.map((claim) => {
                                 const statusCfg = STATUS_CONFIG[claim.status] || STATUS_CONFIG.pending;
                                 const StatusIcon = statusCfg.icon;
                                 const isExpanded = expandedClaimId === claim.id;
                                 const hasHandover = claim.handover?.isEligible;
                                 const isHandoverReady = claim.status === "approved" || claim.status === "in_handover";
+                                const { isFinder, isClaimant } = getClaimRole(claim);
 
                                 return (
                                     <div
@@ -575,6 +704,19 @@ function ClaimantClaimsContent() {
                                                             )}
                                                         </button>
 
+                                                        {/* Role Badge */}
+                                                        {isFinder ? (
+                                                            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700 dark:text-emerald-300">
+                                                                <ShieldCheck size={11} className="text-emerald-600 dark:text-emerald-400" />
+                                                                Incoming Claim (You Found Item)
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 text-[10.5px] font-bold text-blue-700 dark:text-blue-300">
+                                                                <User size={11} className="text-blue-600 dark:text-blue-400" />
+                                                                Your Submitted Claim
+                                                            </span>
+                                                        )}
+
                                                         {/* Claimed Date */}
                                                         <span className="flex items-center gap-1 text-[11.5px] text-slate-400 dark:text-slate-500">
                                                             <Calendar size={12} />
@@ -591,6 +733,21 @@ function ClaimantClaimsContent() {
                                                         <MapPin size={13} className="shrink-0 text-slate-400" />
                                                         <span className="truncate">{claim.location}</span>
                                                     </div>
+
+                                                    {/* Claimant Info Badge (when viewing as Finder) */}
+                                                    {isFinder && claim.claimant && (
+                                                        <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50/60 px-3 py-1.5 text-xs text-slate-700 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-slate-200">
+                                                            <img
+                                                                src={claim.claimant?.avatar || "/default-avatar.png"}
+                                                                alt={claim.claimant?.name || "Claimant"}
+                                                                className="h-5 w-5 rounded-full object-cover ring-1 ring-indigo-400"
+                                                            />
+                                                            <span>
+                                                                Claimed by <span className="font-bold text-slate-900 dark:text-white">{claim.claimant?.name || "Claimant"}</span>
+                                                                {claim.claimant?.email ? ` (${claim.claimant.email})` : ""}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -607,6 +764,45 @@ function ClaimantClaimsContent() {
 
                                                 {/* Direct Action Hub */}
                                                 <div className="flex flex-wrap items-center gap-2">
+                                                    {/* Finder Actions: If Pending -> Approve or Decline */}
+                                                    {isFinder && (claim.status === "pending" || claim.status === "needs_info") && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setApproveModalClaim(claim);
+                                                                    setDecisionNote("");
+                                                                }}
+                                                                disabled={actionInProgress === claim.id}
+                                                                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700 disabled:opacity-50"
+                                                            >
+                                                                <CheckCircle2 size={13} />
+                                                                <span>Approve Claim</span>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setRejectModalClaim(claim);
+                                                                    setDecisionNote("");
+                                                                }}
+                                                                disabled={actionInProgress === claim.id}
+                                                                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300 disabled:opacity-50"
+                                                            >
+                                                                <XCircle size={13} />
+                                                                <span>Decline</span>
+                                                            </button>
+                                                        </>
+                                                    )}
+
+                                                    {/* If Handover is ready -> Link directly to /dashboard/handovers */}
+                                                    {isHandoverReady && (
+                                                        <Link
+                                                            href="/dashboard/handovers"
+                                                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#9ae600] px-3.5 py-1.5 text-xs font-bold text-slate-950 transition hover:bg-[#88cc00] shadow-xs"
+                                                        >
+                                                            <Handshake size={14} />
+                                                            <span>Coordinate Handover</span>
+                                                        </Link>
+                                                    )}
+
                                                     {/* Direct Link to Report */}
                                                     <Link
                                                         href={`/reports/${claim.reportId}`}
@@ -616,22 +812,19 @@ function ClaimantClaimsContent() {
                                                         <span>View Report</span>
                                                     </Link>
 
-                                                    {/* Direct Link to Handover (if ready/in handover) */}
-                                                    {hasHandover && (
+                                                    {/* Direct Link to Handover modal for claimant */}
+                                                    {!isFinder && hasHandover && !isHandoverReady && (
                                                         <button
                                                             onClick={() => setHandoverModalClaim(claim)}
-                                                            className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-xs ${isHandoverReady
-                                                                    ? "bg-[#9ae600] text-slate-950 hover:bg-[#88cc00]"
-                                                                    : "bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950"
-                                                                }`}
+                                                            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 transition shadow-xs"
                                                         >
                                                             <Handshake size={14} />
-                                                            <span>{claim.status === "reunited" ? "Handover Summary" : "Handover Hub"}</span>
+                                                            <span>Handover Hub</span>
                                                         </button>
                                                     )}
 
-                                                    {/* Action for Needs Info */}
-                                                    {claim.status === "needs_info" && (
+                                                    {/* Action for Needs Info for claimant */}
+                                                    {!isFinder && claim.status === "needs_info" && (
                                                         <button
                                                             onClick={() => {
                                                                 setProofModalClaim(claim);
@@ -822,40 +1015,119 @@ function ClaimantClaimsContent() {
                                                                     )}
                                                                 </div>
 
-                                                                {/* Finder / Custodian Profile */}
-                                                                {claim.finder && (
-                                                                    <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 dark:border-white/5 dark:bg-white/[0.02]">
-                                                                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
-                                                                            <User size={12} />
-                                                                            <span>Counterpart / Item Custodian</span>
-                                                                        </h4>
-                                                                        <div className="flex items-center gap-3">
-                                                                            <img
-                                                                                src={claim.finder.avatar}
-                                                                                alt={claim.finder.name}
-                                                                                className="h-10 w-10 rounded-full object-cover ring-2 ring-white dark:ring-ink-800"
-                                                                            />
-                                                                            <div className="min-w-0 flex-1">
-                                                                                <div className="flex items-center gap-1.5">
-                                                                                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                                                                        {claim.finder.name}
-                                                                                    </p>
-                                                                                    <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.2 text-[9.5px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                                                        {claim.finder.trustScore}
-                                                                                    </span>
-                                                                                </div>
-                                                                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                                                                                    {claim.finder.role} • {claim.finder.badge}
-                                                                                </p>
+                                                                {/* Counterpart Profile: If user is Finder, show Claimant. If Claimant, show Finder */}
+                                                                {isFinder ? (
+                                                                    <div className="space-y-3">
+                                                                        {/* Claimant Profile Card */}
+                                                                        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-900/40 dark:bg-indigo-950/20">
+                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5">
+                                                                                    <User size={13} />
+                                                                                    <span>Claimant (Who Claimed This Item)</span>
+                                                                                </h4>
+                                                                                <span className="rounded-full bg-indigo-600/10 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-300">
+                                                                                    Claimant
+                                                                                </span>
                                                                             </div>
+                                                                            <div className="flex items-center gap-3">
+                                                                                <img
+                                                                                    src={claim.claimant?.avatar || "/default-avatar.png"}
+                                                                                    alt={claim.claimant?.name || "Claimant"}
+                                                                                    className="h-10 w-10 rounded-full object-cover ring-2 ring-indigo-400 dark:ring-indigo-600"
+                                                                                />
+                                                                                <div className="min-w-0 flex-1">
+                                                                                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                                                                        {claim.claimant?.name || "Claimant"}
+                                                                                    </p>
+                                                                                    {claim.claimant?.email && (
+                                                                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                                                                            {claim.claimant.email}
+                                                                                        </p>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                            {claim.claimant?.phone && (
+                                                                                <div className="mt-2.5 flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                                                                    <Phone size={13} className="text-slate-400" />
+                                                                                    <span>{claim.claimant.phone}</span>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
-                                                                        {claim.finder.phone && isHandoverReady && (
-                                                                            <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                                                                <Phone size={13} className="text-slate-400" />
-                                                                                <span>{claim.finder.phone}</span>
+
+                                                                        {/* Finder Verification Decision Card */}
+                                                                        {(claim.status === "pending" || claim.status === "needs_info") && (
+                                                                            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-50/50 p-4 dark:border-emerald-500/20 dark:bg-emerald-950/20">
+                                                                                <h4 className="text-xs font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5 mb-1.5">
+                                                                                    <ShieldCheck size={14} className="text-emerald-600 dark:text-emerald-400" />
+                                                                                    <span>Finder Verification Decision</span>
+                                                                                </h4>
+                                                                                <p className="text-[11.5px] text-emerald-800/80 dark:text-emerald-300/80 mb-3 leading-relaxed">
+                                                                                    Review the claimant&apos;s private identifying details. If they match the item you found, approve this claim to initiate the Safe Handover protocol.
+                                                                                </p>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <button
+                                                                                        onClick={() => {
+                                                                                            setApproveModalClaim(claim);
+                                                                                            setDecisionNote("");
+                                                                                        }}
+                                                                                        disabled={actionInProgress === claim.id}
+                                                                                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700 disabled:opacity-50"
+                                                                                    >
+                                                                                        <CheckCircle2 size={13} />
+                                                                                        <span>Approve Claim</span>
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={() => {
+                                                                                            setRejectModalClaim(claim);
+                                                                                            setDecisionNote("");
+                                                                                        }}
+                                                                                        disabled={actionInProgress === claim.id}
+                                                                                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3.5 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-50 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300 disabled:opacity-50"
+                                                                                    >
+                                                                                        <XCircle size={13} />
+                                                                                        <span>Decline</span>
+                                                                                    </button>
+                                                                                </div>
                                                                             </div>
                                                                         )}
                                                                     </div>
+                                                                ) : (
+                                                                    claim.finder && (
+                                                                        <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 dark:border-white/5 dark:bg-white/[0.02]">
+                                                                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+                                                                                <User size={12} />
+                                                                                <span>Finder / Item Custodian</span>
+                                                                            </h4>
+                                                                            <div className="flex items-center gap-3">
+                                                                                <img
+                                                                                    src={claim.finder.avatar || "/default-avatar.png"}
+                                                                                    alt={claim.finder.name || "Finder"}
+                                                                                    className="h-10 w-10 rounded-full object-cover ring-2 ring-white dark:ring-ink-800"
+                                                                                />
+                                                                                <div className="min-w-0 flex-1">
+                                                                                    <div className="flex items-center gap-1.5">
+                                                                                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                                                                            {claim.finder.name}
+                                                                                        </p>
+                                                                                        {claim.finder.trustScore && (
+                                                                                            <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.2 text-[9.5px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                                                {claim.finder.trustScore}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                                                                        {claim.finder.role || "Verified Finder"} {claim.finder.badge ? `• ${claim.finder.badge}` : ""}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                            {claim.finder.phone && isHandoverReady && (
+                                                                                <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                                                                    <Phone size={13} className="text-slate-400" />
+                                                                                    <span>{claim.finder.phone}</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    )
                                                                 )}
                                                             </div>
                                                         </div>
@@ -1105,6 +1377,184 @@ function ClaimantClaimsContent() {
                     toast.success("Concern logged. Our trust & safety team has been alerted.");
                 }}
             />
+
+            {/* 4. Finder Approve Claim Modal */}
+            {approveModalClaim && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div
+                        className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm"
+                        onClick={() => !actionInProgress && setApproveModalClaim(null)}
+                    />
+                    <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-ink-900 sm:p-7 z-10 animate-in fade-in zoom-in-95 duration-200">
+                        <button
+                            onClick={() => !actionInProgress && setApproveModalClaim(null)}
+                            className="absolute right-5 top-5 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                        >
+                            <X size={16} />
+                        </button>
+
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                                <CheckCircle2 size={22} strokeWidth={2.3} />
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                                    Finder Verification
+                                </span>
+                                <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white">
+                                    Approve Ownership Claim
+                                </h3>
+                            </div>
+                        </div>
+
+                        <div className="mb-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 dark:border-white/5 dark:bg-white/[0.02]">
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Item</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                                {approveModalClaim.itemTitle}
+                            </p>
+                            <div className="mt-3 flex items-center gap-2.5 pt-3 border-t border-slate-200/60 dark:border-white/5">
+                                <img
+                                    src={approveModalClaim.claimant?.avatar || "/default-avatar.png"}
+                                    alt={approveModalClaim.claimant?.name || "Claimant"}
+                                    className="h-8 w-8 rounded-full object-cover ring-2 ring-indigo-500/30"
+                                />
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                        Claimant: {approveModalClaim.claimant?.name || "Claimant"}
+                                    </p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                        {approveModalClaim.claimant?.email || "Submitted private proof"}
+                                    </p>
+                                </div>
+                            </div>
+                            {approveModalClaim.claimantProof?.description && (
+                                <div className="mt-3 rounded-xl bg-white p-3 text-xs text-slate-700 dark:bg-ink-800 dark:text-slate-300 border border-slate-100 dark:border-white/5">
+                                    <span className="font-bold text-slate-900 dark:text-white">Submitted Proof: </span>
+                                    <span>{approveModalClaim.claimantProof.description}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                                    Verification Note / Handover Advice (Optional)
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    value={decisionNote}
+                                    onChange={(e) => setDecisionNote(e.target.value)}
+                                    placeholder="e.g. Details matched engraved initials. Ready to meet at designated location."
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white dark:border-white/10 dark:bg-ink-800 dark:text-white dark:focus:border-emerald-400 resize-none"
+                                />
+                            </div>
+
+                            <p className="text-[11.5px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                                Approving will transition the pipeline to the <strong>Safe Handover</strong> stage and generate a verified handover proposal with secure meeting spots.
+                            </p>
+
+                            <div className="flex items-center justify-end gap-2.5 pt-2">
+                                <button
+                                    type="button"
+                                    disabled={actionInProgress === approveModalClaim.id}
+                                    onClick={() => setApproveModalClaim(null)}
+                                    className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleConfirmApprove}
+                                    disabled={actionInProgress === approveModalClaim.id}
+                                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                                >
+                                    {actionInProgress === approveModalClaim.id ? (
+                                        <RefreshCw size={13} className="animate-spin" />
+                                    ) : (
+                                        <CheckCircle2 size={14} />
+                                    )}
+                                    <span>Confirm Approval</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 5. Finder Decline Claim Modal */}
+            {rejectModalClaim && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div
+                        className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm"
+                        onClick={() => !actionInProgress && setRejectModalClaim(null)}
+                    />
+                    <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-ink-900 sm:p-7 z-10 animate-in fade-in zoom-in-95 duration-200">
+                        <button
+                            onClick={() => !actionInProgress && setRejectModalClaim(null)}
+                            className="absolute right-5 top-5 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                        >
+                            <X size={16} />
+                        </button>
+
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400">
+                                <XCircle size={22} strokeWidth={2.3} />
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                                    Finder Verification
+                                </span>
+                                <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white">
+                                    Decline Ownership Claim
+                                </h3>
+                            </div>
+                        </div>
+
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                            Are you sure you want to decline the claim for <span className="font-semibold text-slate-800 dark:text-slate-200">{rejectModalClaim.itemTitle}</span>?
+                        </p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                                    Reason for Declining (Sent to Claimant)
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    value={decisionNote}
+                                    onChange={(e) => setDecisionNote(e.target.value)}
+                                    placeholder="e.g. Identifying marks or engravings described did not match the physical item."
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-900 outline-none transition focus:border-rose-500 focus:bg-white dark:border-white/10 dark:bg-ink-800 dark:text-white dark:focus:border-rose-400 resize-none"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2.5 pt-2">
+                                <button
+                                    type="button"
+                                    disabled={actionInProgress === rejectModalClaim.id}
+                                    onClick={() => setRejectModalClaim(null)}
+                                    className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleConfirmReject}
+                                    disabled={actionInProgress === rejectModalClaim.id}
+                                    className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-5 py-2 text-xs font-bold text-white transition hover:bg-rose-700 disabled:opacity-50"
+                                >
+                                    {actionInProgress === rejectModalClaim.id ? (
+                                        <RefreshCw size={13} className="animate-spin" />
+                                    ) : (
+                                        <XCircle size={14} />
+                                    )}
+                                    <span>Decline Claim</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
