@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   ShieldAlert,
@@ -21,161 +21,157 @@ import {
   Smartphone,
   Globe,
   FileWarning,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import toast from "@/lib/toast";
 
 const STORAGE_FRAUD_KEY = "findora_admin_fraud_v1";
 
-const INITIAL_FRAUD_CASES = [
-  {
-    id: "fraud-501",
-    user: "Kabir Hossain",
-    email: "kabir.claim_bot@mailnesia.com",
-    avatar: "/default-avatar.png",
-    ipAddress: "103.205.71.18",
-    riskScore: 94,
-    riskLevel: "high",
-    triggerReason: "Multi-claim surge: 6 MacBook Pro laptops claimed in 24 hours",
-    reportedAt: "35 mins ago",
-    status: "investigating",
-    evidence: "User submitted identical proof answers across 6 separate MacBook reports with generic stock descriptions.",
-    deviceFingerprint: "Chrome 122 on Windows (Headless browser signals detected)",
-    totalClaims: 14,
-    disputesCount: 6,
-  },
-  {
-    id: "fraud-502",
-    user: "GoldHunter_X",
-    email: "hunter_x99@tempmail.plus",
-    avatar: "/default-avatar.png",
-    ipAddress: "185.220.101.5",
-    riskScore: 88,
-    riskLevel: "high",
-    triggerReason: "Stock photo fraud: Image matches Shutterstock watermark",
-    reportedAt: "2 hours ago",
-    status: "investigating",
-    evidence: "Found report for 22k Gold Wedding Ring uploaded cropped image traced to stock photography catalog.",
-    deviceFingerprint: "TOR Exit Node / Unknown Linux distro",
-    totalClaims: 3,
-    disputesCount: 2,
-  },
-  {
-    id: "fraud-503",
-    user: "Shuvo Rahman",
-    email: "shuvo.r@gmail.com",
-    avatar: "/default-avatar.png",
-    ipAddress: "27.147.202.94",
-    riskScore: 65,
-    riskLevel: "medium",
-    triggerReason: "VPN IP hopping: 12 proxy connections in 30 minutes",
-    reportedAt: "5 hours ago",
-    status: "warning_issued",
-    evidence: "Frequent geo-location shifts during claim verification process for iPhone 14 Pro Max.",
-    deviceFingerprint: "Safari on iOS 17.4 (NordVPN Data Center IP)",
-    totalClaims: 5,
-    disputesCount: 1,
-  },
-  {
-    id: "fraud-504",
-    user: "Rafiqul Islam",
-    email: "rafiqul.claim@gmail.com",
-    avatar: "/default-avatar.png",
-    ipAddress: "118.67.215.42",
-    riskScore: 91,
-    riskLevel: "high",
-    triggerReason: "Extortion demand in claim chat: Demanding 5,000 BDT cash",
-    reportedAt: "Yesterday",
-    status: "action_taken",
-    evidence: "Chat transcripts confirmed finder refused handover unless claimant wired money via personal bKash.",
-    deviceFingerprint: "Android Mobile (Dhaka Mobile Network)",
-    totalClaims: 2,
-    disputesCount: 2,
-  },
-  {
-    id: "fraud-505",
-    user: "Nusrat Jahan",
-    email: "nusrat.jahan99@yahoo.com",
-    avatar: "/default-avatar.png",
-    ipAddress: "182.160.103.14",
-    riskScore: 28,
-    riskLevel: "low",
-    triggerReason: "Typo in warranty serial number submission",
-    reportedAt: "2 days ago",
-    status: "cleared",
-    evidence: "Claimant accidentally inverted two digits of MacBook serial number. Verified with legitimate purchase receipt.",
-    deviceFingerprint: "macOS Sonoma on MacBook Air",
-    totalClaims: 1,
-    disputesCount: 0,
-  },
-];
-
 export default function AdminFraudPage() {
   const [cases, setCases] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [riskFilter, setRiskFilter] = useState("all"); // 'all' | 'high' | 'medium' | 'low'
-  const [statusFilter, setStatusFilter] = useState("all"); // 'all' | 'investigating' | 'action_taken' | 'banned' | 'cleared'
+  const [statusFilter, setStatusFilter] = useState("all"); // 'all' | 'investigating' | 'warning_issued' | 'suspended' | 'banned' | 'cleared'
 
   // Detail Modal State
   const [activeCase, setActiveCase] = useState(null);
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false);
 
-  // Load cases from storage or initial seed
+  // Clear legacy mock fraud cases storage on mount
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_FRAUD_KEY);
-      if (stored) {
-        setCases(JSON.parse(stored));
-      } else {
-        setCases(INITIAL_FRAUD_CASES);
-        localStorage.setItem(STORAGE_FRAUD_KEY, JSON.stringify(INITIAL_FRAUD_CASES));
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(STORAGE_FRAUD_KEY);
       }
-    } catch {
-      setCases(INITIAL_FRAUD_CASES);
+    } catch {}
+  }, []);
+
+  // Fetch real fraud cases from backend MongoDB
+  const fetchFraudCases = useCallback(async () => {
+    try {
+      setLoading(true);
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${apiBase}/fraud?limit=100`, { cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        const rawCases = Array.isArray(json?.data) ? json.data : [];
+        const normalized = rawCases.map((c) => {
+          const score = Number(c.riskScore) || 50;
+          let calculatedRisk = c.riskLevel;
+          if (!calculatedRisk || calculatedRisk === "critical") {
+            calculatedRisk = score >= 75 ? "high" : score >= 40 ? "medium" : "low";
+          }
+
+          return {
+            id: c.caseId || c._id,
+            _id: c._id,
+            caseId: c.caseId || `FRD-${String(c._id).slice(-4)}`,
+            user: c.targetUser?.name || "Flagged User",
+            email: c.targetUser?.email || "user@findora.app",
+            avatar: c.targetUser?.avatar || "/default-avatar.png",
+            ipAddress: c.ipAddress || "103.205.71.18",
+            riskScore: score,
+            riskLevel: calculatedRisk,
+            triggerReason: c.triggerReason || "Suspicious anomaly detected",
+            reportedAt: c.createdAt
+              ? new Date(c.createdAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })
+              : "Recently",
+            status: c.status || "investigating",
+            evidence: c.evidence || "Automated system detected anomaly in claim activity.",
+            deviceFingerprint: c.deviceFingerprint || "Standard web browser",
+            totalClaims: c.totalClaims || 1,
+            disputesCount: c.disputesCount || 0,
+          };
+        });
+        setCases(normalized);
+        return;
+      }
+      setCases([]);
+    } catch (err) {
+      console.warn("Could not fetch fraud telemetry from database:", err.message);
+      toast.error("Could not fetch fraud investigations from backend.");
+      setCases([]);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  const saveCases = (nextCases) => {
-    setCases(nextCases);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchFraudCases();
+  }, [fetchFraudCases]);
+
+  // Administrative Actions wired to MongoDB
+  const updateStatusInDb = async (id, nextStatus, notes = "") => {
     try {
-      localStorage.setItem(STORAGE_FRAUD_KEY, JSON.stringify(nextCases));
-    } catch {}
+      setIsSubmittingAction(true);
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const targetCase = cases.find((c) => c.id === id || c._id === id);
+      const targetDbId = targetCase?._id || id;
+
+      const res = await fetch(`${apiBase}/fraud/${targetDbId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: nextStatus,
+          actionNotes: notes || `Admin updated status to ${nextStatus}`,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to update case in database");
+
+      setCases((prev) =>
+        prev.map((c) =>
+          c.id === id || c._id === id ? { ...c, status: nextStatus } : c
+        )
+      );
+
+      if (activeCase && (activeCase.id === id || activeCase._id === id)) {
+        setActiveCase((prev) => ({ ...prev, status: nextStatus }));
+      }
+      return true;
+    } catch (err) {
+      console.error("Failed to update fraud status in DB:", err);
+      toast.error("Failed to record administrative action in database.");
+      return false;
+    } finally {
+      setIsSubmittingAction(false);
+    }
   };
 
-  // Administrative Actions
-  const handleSuspend = (id) => {
-    const updated = cases.map((c) =>
-      c.id === id ? { ...c, status: "suspended" } : c
-    );
-    saveCases(updated);
-    toast.warning("Account suspended for 14 days pending review");
-    if (activeCase?.id === id) setActiveCase((prev) => ({ ...prev, status: "suspended" }));
+  const handleSuspend = async (id) => {
+    const success = await updateStatusInDb(id, "suspended", "Account suspended for 14 days pending review");
+    if (success) {
+      toast.warning("Account suspended for 14 days recorded in database");
+    }
   };
 
-  const handleBan = (id) => {
-    const updated = cases.map((c) =>
-      c.id === id ? { ...c, status: "banned" } : c
-    );
-    saveCases(updated);
-    toast.error("Account permanently banned from platform");
-    if (activeCase?.id === id) setActiveCase((prev) => ({ ...prev, status: "banned" }));
+  const handleBan = async (id) => {
+    const success = await updateStatusInDb(id, "banned", "Account permanently banned from Findora platform");
+    if (success) {
+      toast.error("Account permanently banned in database");
+    }
   };
 
-  const handleClear = (id) => {
-    const updated = cases.map((c) =>
-      c.id === id ? { ...c, status: "cleared", riskScore: 12, riskLevel: "low" } : c
-    );
-    saveCases(updated);
-    toast.success("Flags cleared: False positive resolved");
-    if (activeCase?.id === id) setActiveCase((prev) => ({ ...prev, status: "cleared" }));
+  const handleClear = async (id) => {
+    const success = await updateStatusInDb(id, "cleared", "False positive resolved by admin investigation");
+    if (success) {
+      toast.success("Investigation cleared and false positive resolved in database");
+    }
   };
 
-  const handleWarn = (id) => {
-    const updated = cases.map((c) =>
-      c.id === id ? { ...c, status: "warning_issued" } : c
-    );
-    saveCases(updated);
-    toast.info("Formal warning notice dispatched to user email");
-    if (activeCase?.id === id) setActiveCase((prev) => ({ ...prev, status: "warning_issued" }));
+  const handleWarn = async (id) => {
+    const success = await updateStatusInDb(id, "warning_issued", "Formal trust & safety warning issued to user");
+    if (success) {
+      toast.info("Formal warning notice recorded in database");
+    }
   };
 
   // Filtered cases
@@ -185,10 +181,11 @@ export default function AdminFraudPage() {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matches =
-          item.user.toLowerCase().includes(q) ||
-          item.email.toLowerCase().includes(q) ||
-          item.ipAddress.includes(q) ||
-          item.triggerReason.toLowerCase().includes(q);
+          (item.user || "").toLowerCase().includes(q) ||
+          (item.email || "").toLowerCase().includes(q) ||
+          (item.ipAddress || "").includes(q) ||
+          (item.triggerReason || "").toLowerCase().includes(q) ||
+          (item.caseId || "").toLowerCase().includes(q);
         if (!matches) return false;
       }
 
@@ -206,7 +203,7 @@ export default function AdminFraudPage() {
     });
   }, [cases, searchQuery, riskFilter, statusFilter]);
 
-  // Fraud KPIs
+  // Fraud KPIs from database
   const metrics = useMemo(() => {
     let highRisk = 0;
     let investigating = 0;
@@ -223,6 +220,31 @@ export default function AdminFraudPage() {
 
   return (
     <div className="space-y-5">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold font-heading text-slate-950 dark:text-white">
+            Fraud &amp; Abuse Investigations
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Real-time security telemetry, multi-claim anomaly audits, and syndicate detection.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={fetchFraudCases}
+          disabled={loading}
+          className="self-start sm:self-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 hover:border-[#9ae600] transition-colors shadow-xs"
+        >
+          <RefreshCw
+            size={13}
+            className={loading ? "animate-spin text-[#72a800] dark:text-[#9ae600]" : "text-slate-400"}
+          />
+          <span>Sync Telemetry</span>
+        </button>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">
@@ -230,7 +252,7 @@ export default function AdminFraudPage() {
             Active Investigations
           </p>
           <p className="mt-1 font-display text-2xl font-bold text-rose-500">
-            {metrics.investigating}
+            {loading ? "..." : metrics.investigating}
           </p>
           <span className="mt-1 inline-block text-[10px] text-slate-500">
             Under active human review
@@ -242,7 +264,7 @@ export default function AdminFraudPage() {
             Critical Risk Scores
           </p>
           <p className="mt-1 font-display text-2xl font-bold text-amber-500">
-            {metrics.highRisk}
+            {loading ? "..." : metrics.highRisk}
           </p>
           <span className="mt-1 inline-block text-[10px] text-slate-500">
             Risk rating &ge; 80%
@@ -254,7 +276,7 @@ export default function AdminFraudPage() {
             Sanctioned Accounts
           </p>
           <p className="mt-1 font-display text-2xl font-bold text-slate-900 dark:text-white">
-            {metrics.banned}
+            {loading ? "..." : metrics.banned}
           </p>
           <span className="mt-1 inline-block text-[10px] text-slate-500">
             Suspended or banned
@@ -263,13 +285,13 @@ export default function AdminFraudPage() {
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">
           <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#72a800] dark:text-[#9ae600]">
-            Prevented Loss Value
+            Database Cases
           </p>
           <p className="mt-1 font-display text-2xl font-bold text-[#72a800] dark:text-[#9ae600]">
-            $14,850
+            {loading ? "..." : metrics.total}
           </p>
           <span className="mt-1 inline-block text-[10px] text-slate-500">
-            Protected community property
+            Logged incidents &amp; signals
           </span>
         </div>
       </div>
@@ -315,17 +337,6 @@ export default function AdminFraudPage() {
               <option value="banned">Banned</option>
               <option value="cleared">Cleared</option>
             </select>
-
-            <button
-              type="button"
-              onClick={() => {
-                saveCases(INITIAL_FRAUD_CASES);
-                toast.success("Fraud cases reset to initial telemetry");
-              }}
-              className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer ml-auto"
-            >
-              Reset Telemetry
-            </button>
           </div>
         </div>
       </div>
@@ -345,7 +356,14 @@ export default function AdminFraudPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-white/[0.05]">
-              {filteredCases.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <Loader2 size={24} className="animate-spin mx-auto text-[#72a800] dark:text-[#9ae600] mb-2" />
+                    <p className="font-semibold text-xs">Loading database investigations...</p>
+                  </td>
+                </tr>
+              ) : filteredCases.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
                     <p className="font-semibold text-sm">No fraud cases match your criteria</p>
@@ -406,8 +424,8 @@ export default function AdminFraudPage() {
                         <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
                           {item.triggerReason}
                         </p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
-                          Reported {item.reportedAt} • {item.disputesCount} disputes
+                        <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                          Case: {item.caseId} • {item.disputesCount} disputes
                         </p>
                       </td>
 
@@ -475,7 +493,7 @@ export default function AdminFraudPage() {
               </span>
               <div>
                 <h4 className="font-display font-bold text-lg text-slate-950 dark:text-white">
-                  Fraud Case Investigation #{activeCase.id}
+                  Fraud Case Investigation #{activeCase.caseId}
                 </h4>
                 <p className="text-xs text-slate-500">
                   Target Account: {activeCase.user} ({activeCase.email})
@@ -483,112 +501,108 @@ export default function AdminFraudPage() {
               </div>
             </div>
 
-            {/* Risk Badge Bar */}
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5 flex items-center justify-between mb-4">
-              <div>
-                <span className="text-[10px] font-mono text-slate-400 uppercase font-bold">
-                  Algorithmic Risk Score
+            {/* Telemetry Metrics Grid */}
+            <div className="grid grid-cols-3 gap-2.5 mb-4">
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10">
+                <span className="text-[10px] font-mono text-slate-400 uppercase">
+                  Assigned Risk
                 </span>
-                <p className="text-xl font-bold font-mono text-rose-500">
-                  {activeCase.riskScore}% Confidence
+                <p className="font-bold text-base text-rose-500 mt-0.5 font-mono">
+                  {activeCase.riskScore}%
                 </p>
               </div>
-              <div className="text-right">
-                <span className="text-[10px] font-mono text-slate-400 uppercase font-bold">
-                  Current Status
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10">
+                <span className="text-[10px] font-mono text-slate-400 uppercase">
+                  Total Claims
                 </span>
-                <p className="text-xs font-mono font-bold uppercase text-slate-700 dark:text-slate-200 mt-0.5">
-                  {activeCase.status.replace("_", " ")}
+                <p className="font-bold text-base text-slate-900 dark:text-white mt-0.5 font-mono">
+                  {activeCase.totalClaims}
+                </p>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10">
+                <span className="text-[10px] font-mono text-slate-400 uppercase">
+                  Disputes
+                </span>
+                <p className="font-bold text-base text-amber-500 mt-0.5 font-mono">
+                  {activeCase.disputesCount}
                 </p>
               </div>
             </div>
 
-            {/* Telemetry Breakdown */}
+            {/* Technical Evidence Details */}
             <div className="space-y-3 mb-5 text-xs">
-              <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 space-y-1.5">
-                <p className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                  <FileWarning size={13} className="text-rose-500" />
-                  Primary Detection Trigger
-                </p>
-                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 space-y-1">
+                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                  Detection Trigger
+                </span>
+                <p className="font-semibold text-slate-900 dark:text-white">
                   {activeCase.triggerReason}
                 </p>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 space-y-1.5">
-                <p className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                  <Activity size={13} className="text-amber-500" />
-                  Investigative Evidence
-                </p>
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 space-y-1">
+                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                  Audited Evidence &amp; Behavioral Fingerprint
+                </span>
                 <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
                   {activeCase.evidence}
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
-                  <span className="text-[10px] font-mono text-slate-400 uppercase">
-                    Network IP
-                  </span>
-                  <p className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">
-                    {activeCase.ipAddress}
-                  </p>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
-                  <span className="text-[10px] font-mono text-slate-400 uppercase">
-                    Claims / Disputes
-                  </span>
-                  <p className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">
-                    {activeCase.totalClaims} Claims / {activeCase.disputesCount} Disputes
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
-                <span className="text-[10px] font-mono text-slate-400 uppercase">
-                  Device Fingerprint
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 space-y-1">
+                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                  Device &amp; Network Telemetry
                 </span>
-                <p className="font-mono text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
-                  {activeCase.deviceFingerprint}
+                <p className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                  {activeCase.deviceFingerprint} • IP: {activeCase.ipAddress}
                 </p>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="pt-3 border-t border-slate-100 dark:border-white/10 flex flex-wrap items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => handleClear(activeCase.id)}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition-colors cursor-pointer"
-              >
-                Clear / Dismiss Flag
-              </button>
-
-              <div className="flex items-center gap-2">
+            {/* Administrative Action Dispatch */}
+            <div className="pt-4 border-t border-slate-200 dark:border-white/10">
+              <p className="text-xs font-bold text-slate-900 dark:text-white mb-2.5">
+                Dispatch Administrative Sanction:
+              </p>
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
+                  disabled={isSubmittingAction}
                   onClick={() => handleWarn(activeCase.id)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 transition-colors cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
-                  Send Warning
+                  <Send size={12} />
+                  <span>Issue Formal Warning</span>
                 </button>
 
                 <button
                   type="button"
+                  disabled={isSubmittingAction}
                   onClick={() => handleSuspend(activeCase.id)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 border border-rose-500/30 transition-colors cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
-                  Suspend Account
+                  <UserX size={12} />
+                  <span>Suspend 14 Days</span>
                 </button>
 
                 <button
                   type="button"
+                  disabled={isSubmittingAction}
                   onClick={() => handleBan(activeCase.id)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer flex items-center gap-1"
+                  className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-950 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <Ban size={12} />
                   <span>Permanent Ban</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isSubmittingAction}
+                  onClick={() => handleClear(activeCase.id)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer flex items-center gap-1.5 ml-auto disabled:opacity-50"
+                >
+                  <CheckCircle2 size={12} />
+                  <span>Clear Case (False Positive)</span>
                 </button>
               </div>
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   MessageSquareWarning,
@@ -19,156 +19,165 @@ import {
   ExternalLink,
   X,
   Check,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import toast from "@/lib/toast";
 
 const STORAGE_REVIEWS_KEY = "findora_admin_reviews_v1";
 
-const INITIAL_REVIEWS = [
-  {
-    id: "rev-101",
-    reviewer: "Imran Hossain",
-    reviewerEmail: "imran@example.com",
-    avatar: "/default-avatar.png",
-    targetItem: "Dell XPS 15 Laptop (Silver)",
-    targetOwner: "Tanvir Ahmed",
-    rating: 1,
-    comment: "This person refused to return my laptop unless I sent 10,000 BDT via bKash! Total extortion scammer, ban them immediately!",
-    flagReason: "Extortion / Illegal ransom demand",
-    status: "flagged",
-    date: "1 hour ago",
-    reportCount: 3,
-  },
-  {
-    id: "rev-102",
-    reviewer: "CryptoTrader_99",
-    reviewerEmail: "spammer99@telegram.xyz",
-    avatar: "/default-avatar.png",
-    targetItem: "Leather Bifold Wallet",
-    targetOwner: "Sarah Khan",
-    rating: 5,
-    comment: "Nice wallet. Join our telegram channel t.me/fast_recovery_bd for instant crypto recovery tools! Guaranteed results in 5 mins.",
-    flagReason: "Spam & unauthorized promotion",
-    status: "flagged",
-    date: "3 hours ago",
-    reportCount: 5,
-  },
-  {
-    id: "rev-103",
-    reviewer: "Farhana Yasmin",
-    reviewerEmail: "farhana.y@gmail.com",
-    avatar: "/default-avatar.png",
-    targetItem: "Sony WH-1000XM5 Headphones",
-    targetOwner: "Zabed Mahmud",
-    rating: 5,
-    comment: "Incredible person! Found my headphones at Dhanmondi Lake and handed them back without asking for anything. Restored my faith in humanity.",
-    flagReason: null,
-    status: "approved",
-    date: "Yesterday",
-    reportCount: 0,
-  },
-  {
-    id: "rev-104",
-    reviewer: "Anonymous_User",
-    reviewerEmail: "anon.throwaway@mail.com",
-    avatar: "/default-avatar.png",
-    targetItem: "Blue Hydro Flask & Car Keys",
-    targetOwner: "Rahim Chowdhury",
-    rating: 1,
-    comment: "Liars and thieves. You guys are all stupid scammers. Don't trust this platform at all.",
-    flagReason: "Profanity / abusive language",
-    status: "flagged",
-    date: "2 days ago",
-    reportCount: 2,
-  },
-  {
-    id: "rev-105",
-    reviewer: "Kazi Nabil",
-    reviewerEmail: "nabil.kazi@outlook.com",
-    avatar: "/default-avatar.png",
-    targetItem: "Apple iPhone 14 Pro Max",
-    targetOwner: "Dr. Ayesha Siddiqua",
-    rating: 5,
-    comment: "Met up at Banani Police Station for safe handover. Verified IMEI number on spot. Thank you Findora for making this possible!",
-    flagReason: null,
-    status: "approved",
-    date: "3 days ago",
-    reportCount: 0,
-  },
-  {
-    id: "rev-106",
-    reviewer: "Sabbir Hossain",
-    reviewerEmail: "sabbir.bd@yahoo.com",
-    avatar: "/default-avatar.png",
-    targetItem: "Black Tumi Backpack with Passport",
-    targetOwner: "Fahim Shahriar",
-    rating: 2,
-    comment: "The finder took 4 days to reply to my claim message. My flight almost got missed. Very stressful experience.",
-    flagReason: "Disputed service complaint",
-    status: "pending",
-    date: "4 days ago",
-    reportCount: 1,
-  },
-];
-
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // 'all' | 'flagged' | 'pending' | 'approved' | 'hidden'
   const [ratingFilter, setRatingFilter] = useState("all");
 
-  // Load reviews from localStorage or seed
+  // Clear legacy mock reviews storage on mount
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_REVIEWS_KEY);
-      if (stored) {
-        setReviews(JSON.parse(stored));
-      } else {
-        setReviews(INITIAL_REVIEWS);
-        localStorage.setItem(STORAGE_REVIEWS_KEY, JSON.stringify(INITIAL_REVIEWS));
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(STORAGE_REVIEWS_KEY);
       }
-    } catch {
-      setReviews(INITIAL_REVIEWS);
+    } catch {}
+  }, []);
+
+  // Fetch real reviews from backend MongoDB
+  const fetchReviews = useCallback(async () => {
+    try {
+      setLoading(true);
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${apiBase}/reviews`, { cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        const rawReviews = Array.isArray(json?.data) ? json.data : [];
+        const normalized = rawReviews.map((rev) => {
+          const rawStatus = rev.status || "published";
+          const status = rawStatus === "published" ? "approved" : rawStatus;
+          return {
+            id: rev._id,
+            _id: rev._id,
+            reviewer: rev.reviewer?.name || "Verified Member",
+            reviewerEmail: rev.reviewer?.email || "verified@findora.app",
+            avatar: rev.reviewer?.avatar || "/default-avatar.png",
+            targetItem: rev.targetItem?.title || "Returned Property",
+            targetOwner: rev.targetUser?.name || "Community Member",
+            rating: Number(rev.rating) || 5,
+            comment: rev.comment || "",
+            flagReason: rev.flagReason || null,
+            status,
+            date: rev.createdAt
+              ? new Date(rev.createdAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })
+              : "Recently",
+            reportCount: rev.reportCount || 0,
+          };
+        });
+        setReviews(normalized);
+        return;
+      }
+      setReviews([]);
+    } catch (err) {
+      console.warn("Could not fetch reviews from database:", err.message);
+      toast.error("Could not fetch reviews from backend.");
+      setReviews([]);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  const saveReviews = (nextReviews) => {
-    setReviews(nextReviews);
-    try {
-      localStorage.setItem(STORAGE_REVIEWS_KEY, JSON.stringify(nextReviews));
-    } catch {}
-  };
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchReviews();
+  }, [fetchReviews]);
 
   // Moderation Actions
-  const handleApprove = (id) => {
-    const updated = reviews.map((r) =>
-      r.id === id ? { ...r, status: "approved", flagReason: null } : r
-    );
-    saveReviews(updated);
-    toast.success("Review approved and marked clean");
+  const handleApprove = async (id) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${apiBase}/reviews/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "published", flagReason: "" }),
+      });
+
+      if (!res.ok) throw new Error("Server rejected review approval");
+
+      setReviews((prev) =>
+        prev.map((r) =>
+          r.id === id ? { ...r, status: "approved", flagReason: null, reportCount: 0 } : r
+        )
+      );
+      toast.success("Review approved and marked clean in database");
+    } catch (err) {
+      console.error("Approve review failed:", err);
+      toast.error("Failed to approve review.");
+    }
   };
 
-  const handleHide = (id) => {
-    const updated = reviews.map((r) =>
-      r.id === id ? { ...r, status: "hidden" } : r
-    );
-    saveReviews(updated);
-    toast.warning("Inappropriate review hidden from public directory");
+  const handleHide = async (id) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${apiBase}/reviews/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "hidden" }),
+      });
+
+      if (!res.ok) throw new Error("Server rejected review status change");
+
+      setReviews((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status: "hidden" } : r))
+      );
+      toast.warning("Review hidden from public view in database");
+    } catch (err) {
+      console.error("Hide review failed:", err);
+      toast.error("Failed to hide review.");
+    }
   };
 
-  const handleDismissFlag = (id) => {
-    const updated = reviews.map((r) =>
-      r.id === id ? { ...r, status: "approved", flagReason: null, reportCount: 0 } : r
-    );
-    saveReviews(updated);
-    toast.info("Flag dismissed: review deemed legitimate");
+  const handleDismissFlag = async (id) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${apiBase}/reviews/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "published", flagReason: "" }),
+      });
+
+      if (!res.ok) throw new Error("Server rejected flag dismissal");
+
+      setReviews((prev) =>
+        prev.map((r) =>
+          r.id === id ? { ...r, status: "approved", flagReason: null, reportCount: 0 } : r
+        )
+      );
+      toast.info("Flag dismissed: review deemed legitimate");
+    } catch (err) {
+      console.error("Dismiss flag failed:", err);
+      toast.error("Failed to dismiss flag.");
+    }
   };
 
-  const handleDelete = (id) => {
-    const updated = reviews.filter((r) => r.id !== id);
-    saveReviews(updated);
-    toast.success("Review permanently deleted from platform");
+  const handleDelete = async (id) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${apiBase}/reviews/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("Server rejected deletion");
+
+      setReviews((prev) => prev.filter((r) => r.id !== id));
+      toast.success("Review permanently deleted from database");
+    } catch (err) {
+      console.error("Delete review failed:", err);
+      toast.error("Failed to delete review.");
+    }
   };
 
   // Filtered reviews
@@ -178,9 +187,9 @@ export default function AdminReviewsPage() {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matches =
-          item.reviewer.toLowerCase().includes(q) ||
-          item.comment.toLowerCase().includes(q) ||
-          item.targetItem.toLowerCase().includes(q) ||
+          (item.reviewer || "").toLowerCase().includes(q) ||
+          (item.comment || "").toLowerCase().includes(q) ||
+          (item.targetItem || "").toLowerCase().includes(q) ||
           (item.flagReason || "").toLowerCase().includes(q);
         if (!matches) return false;
       }
@@ -199,7 +208,7 @@ export default function AdminReviewsPage() {
     });
   }, [reviews, searchQuery, statusFilter, ratingFilter]);
 
-  // Review KPI Metrics
+  // Review KPI Metrics computed from database
   const metrics = useMemo(() => {
     let flagged = 0;
     let pending = 0;
@@ -209,7 +218,7 @@ export default function AdminReviewsPage() {
     for (const r of reviews) {
       if (r.status === "flagged") flagged++;
       if (r.status === "pending") pending++;
-      if (r.status === "approved") approved++;
+      if (r.status === "approved" || r.status === "published") approved++;
       if (r.status === "hidden") hidden++;
     }
 
@@ -218,6 +227,31 @@ export default function AdminReviewsPage() {
 
   return (
     <div className="space-y-5">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold font-heading text-slate-950 dark:text-white">
+            Community Reviews Moderation
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Audit verified feedback and ratings submitted after completed handovers.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={fetchReviews}
+          disabled={loading}
+          className="self-start sm:self-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 hover:border-[#9ae600] transition-colors shadow-xs"
+        >
+          <RefreshCw
+            size={13}
+            className={loading ? "animate-spin text-[#72a800] dark:text-[#9ae600]" : "text-slate-400"}
+          />
+          <span>Sync Reviews</span>
+        </button>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">
@@ -225,10 +259,10 @@ export default function AdminReviewsPage() {
             Total Reviews
           </p>
           <p className="mt-1 font-display text-2xl font-bold text-slate-900 dark:text-white">
-            {metrics.total}
+            {loading ? "..." : metrics.total}
           </p>
           <span className="mt-1 inline-block text-[10px] text-slate-500">
-            All user feedback entries
+            All database feedback entries
           </span>
         </div>
 
@@ -237,7 +271,7 @@ export default function AdminReviewsPage() {
             Flagged for Audit
           </p>
           <p className="mt-1 font-display text-2xl font-bold text-rose-500">
-            {metrics.flagged}
+            {loading ? "..." : metrics.flagged}
           </p>
           <span className="mt-1 inline-block text-[10px] text-slate-500">
             Reported by community members
@@ -249,7 +283,7 @@ export default function AdminReviewsPage() {
             Approved &amp; Live
           </p>
           <p className="mt-1 font-display text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-            {metrics.approved}
+            {loading ? "..." : metrics.approved}
           </p>
           <span className="mt-1 inline-block text-[10px] text-slate-500">
             Clean verified feedback
@@ -261,7 +295,7 @@ export default function AdminReviewsPage() {
             Hidden / Moderated
           </p>
           <p className="mt-1 font-display text-2xl font-bold text-slate-700 dark:text-slate-300">
-            {metrics.hidden}
+            {loading ? "..." : metrics.hidden}
           </p>
           <span className="mt-1 inline-block text-[10px] text-slate-500">
             Removed from public view
@@ -311,33 +345,34 @@ export default function AdminReviewsPage() {
               <option value="4">4 Stars</option>
               <option value="5">5 Stars</option>
             </select>
-
-            <button
-              type="button"
-              onClick={() => {
-                saveReviews(INITIAL_REVIEWS);
-                toast.success("Demo reviews reset to initial state");
-              }}
-              className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer ml-auto"
-            >
-              Reset Demo Data
-            </button>
           </div>
         </div>
       </div>
 
       {/* Reviews Moderation Cards Grid */}
       <div className="space-y-3.5">
-        {filteredReviews.length === 0 ? (
+        {loading ? (
           <div className="p-12 text-center rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] text-slate-400">
-            <p className="font-semibold text-sm">No reviews match your filters</p>
-            <p className="text-xs mt-1">Try resetting the status filter or keyword search</p>
+            <Loader2 size={24} className="animate-spin mx-auto text-[#72a800] dark:text-[#9ae600] mb-2" />
+            <p className="font-semibold text-xs">Loading database reviews...</p>
+          </div>
+        ) : filteredReviews.length === 0 ? (
+          <div className="p-12 text-center rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] text-slate-400">
+            <CheckCircle2 size={28} className="mx-auto text-emerald-500 mb-2 opacity-80" />
+            <p className="font-semibold text-sm text-slate-900 dark:text-white">
+              No reviews match your filters
+            </p>
+            <p className="text-xs mt-1 text-slate-500">
+              {reviews.length === 0
+                ? "There are currently no reviews in the database."
+                : "Try resetting the status filter or keyword search."}
+            </p>
           </div>
         ) : (
           filteredReviews.map((rev) => {
             const isFlagged = rev.status === "flagged";
             const isHidden = rev.status === "hidden";
-            const isApproved = rev.status === "approved";
+            const isApproved = rev.status === "approved" || rev.status === "published";
 
             return (
               <div

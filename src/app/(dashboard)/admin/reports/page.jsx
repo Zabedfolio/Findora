@@ -24,10 +24,13 @@ import {
   Check,
   CheckCheck,
   PlusCircle,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import {
   getAllUnifiedReports,
+  getReports,
   updateReportStatus,
 } from "@/services/reportService";
 import toast from "@/lib/toast";
@@ -59,11 +62,17 @@ export default function AdminReportsPage() {
   const [removingTarget, setRemovingTarget] = useState(null);
   const [removalReason, setRemovalReason] = useState(REMOVAL_REASONS[0]);
 
-  // Load verified & removed maps from localStorage
-  const loadState = () => {
+  // Load verified & removed maps and live database reports
+  const loadState = async () => {
     try {
-      const all = getAllUnifiedReports();
-      setReports(all);
+      setIsLoading(true);
+      const res = await getReports({ limit: 100 });
+      if (res?.reports && res.reports.length > 0) {
+        setReports(res.reports);
+      } else {
+        const all = getAllUnifiedReports();
+        setReports(all);
+      }
 
       if (typeof window !== "undefined") {
         const rawVer = localStorage.getItem(STORAGE_VERIFICATIONS);
@@ -72,13 +81,16 @@ export default function AdminReportsPage() {
         if (rawRem) setRemovals(JSON.parse(rawRem));
       }
     } catch (err) {
-      console.error("Error loading admin reports:", err);
+      console.error("Error loading admin reports from database:", err);
+      const all = getAllUnifiedReports();
+      setReports(all);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadState();
   }, []);
 
@@ -237,6 +249,31 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-5">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold font-heading text-slate-950 dark:text-white">
+            Manage Reports &amp; Listings
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Audit lost and found property reports, verify badge legitimacy, and manage listing removals.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={loadState}
+          disabled={isLoading}
+          className="self-start sm:self-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 hover:border-[#9ae600] transition-colors shadow-xs"
+        >
+          <RefreshCw
+            size={13}
+            className={isLoading ? "animate-spin text-[#72a800] dark:text-[#9ae600]" : "text-slate-400"}
+          />
+          <span>Sync Inventory</span>
+        </button>
+      </div>
+
       {/* KPI Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">

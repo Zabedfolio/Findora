@@ -72,3 +72,73 @@ export async function GET() {
     );
   }
 }
+
+/**
+ * PATCH /api/admin/users
+ * Updates a user's role and/or status (banned/active) directly in MongoDB.
+ */
+export async function PATCH(request) {
+  try {
+    const body = await request.json();
+    const { id, email, status, role } = body;
+
+    if (!id && !email) {
+      return NextResponse.json(
+        { success: false, error: "User ID or email is required" },
+        { status: 400 }
+      );
+    }
+
+    const db = await getDatabase();
+    const userCollection = db.collection("user");
+
+    const query = {};
+    if (id) {
+      const { ObjectId } = await import("mongodb");
+      if (ObjectId.isValid(id)) {
+        query.$or = [{ _id: new ObjectId(id) }, { _id: id }, { id }];
+      } else {
+        query.$or = [{ _id: id }, { id }];
+      }
+    } else if (email) {
+      query.email = email.toLowerCase().trim();
+    }
+
+    const updateFields = {
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (status !== undefined) {
+      updateFields.banned = status === "suspended";
+      updateFields.status = status;
+    }
+
+    if (role !== undefined) {
+      updateFields.role = role.toLowerCase();
+    }
+
+    const result = await userCollection.updateOne(query, {
+      $set: updateFields,
+    });
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json(
+        { success: false, error: "User not found in database" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "User successfully updated in database",
+      updated: updateFields,
+    });
+  } catch (error) {
+    console.error("Error updating user in database:", error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to update user" },
+      { status: 500 }
+    );
+  }
+}
+
