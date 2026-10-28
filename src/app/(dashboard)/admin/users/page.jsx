@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -22,6 +22,8 @@ import {
   ArrowRightLeft,
   FileText,
   Handshake,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import useAuth from "@/hooks/useAuth";
@@ -29,96 +31,10 @@ import toast from "@/lib/toast";
 
 const STORAGE_USERS_KEY = "findora_admin_users_v1";
 
-const INITIAL_USERS = [
-  {
-    id: "usr-001",
-    name: "Zabed Mahmud",
-    email: "zabed@findora.app",
-    phone: "+880 1712-345678",
-    avatar: "/default-avatar.png",
-    role: "admin",
-    status: "active",
-    listingsCount: 12,
-    claimsCount: 8,
-    joinedDate: "Sep 15, 2026",
-  },
-  {
-    id: "usr-002",
-    name: "Dr. Ayesha Siddiqua",
-    email: "ayesha.s@du.ac.bd",
-    phone: "+880 1819-234567",
-    avatar: "/default-avatar.png",
-    role: "moderator",
-    status: "active",
-    listingsCount: 8,
-    claimsCount: 3,
-    joinedDate: "Oct 02, 2026",
-  },
-  {
-    id: "usr-003",
-    name: "Tanvir Ahmed",
-    email: "tanvir.ahmed@gmail.com",
-    phone: "+880 1911-876543",
-    avatar: "/default-avatar.png",
-    role: "user",
-    status: "active",
-    listingsCount: 5,
-    claimsCount: 2,
-    joinedDate: "Oct 10, 2026",
-  },
-  {
-    id: "usr-004",
-    name: "Sarah Khan",
-    email: "sarah.k@yahoo.com",
-    phone: "+880 1622-445566",
-    avatar: "/default-avatar.png",
-    role: "user",
-    status: "active",
-    listingsCount: 4,
-    claimsCount: 1,
-    joinedDate: "Oct 12, 2026",
-  },
-  {
-    id: "usr-005",
-    name: "Kabir Hossain",
-    email: "kabir.claim_bot@mailnesia.com",
-    phone: "+880 1555-001122",
-    avatar: "/default-avatar.png",
-    role: "user",
-    status: "suspended",
-    listingsCount: 1,
-    claimsCount: 14,
-    joinedDate: "Oct 21, 2026",
-  },
-  {
-    id: "usr-006",
-    name: "Farhana Yasmin",
-    email: "farhana.y@gmail.com",
-    phone: "+880 1733-998877",
-    avatar: "/default-avatar.png",
-    role: "moderator",
-    status: "active",
-    listingsCount: 7,
-    claimsCount: 4,
-    joinedDate: "Aug 20, 2026",
-  },
-  {
-    id: "usr-007",
-    name: "Rahim Chowdhury",
-    email: "rahim.c@outlook.com",
-    phone: "+880 1844-332211",
-    avatar: "/default-avatar.png",
-    role: "user",
-    status: "active",
-    listingsCount: 3,
-    claimsCount: 1,
-    joinedDate: "Sep 28, 2026",
-  },
-];
-
 export default function AdminUsersPage() {
   const { user: currentUser, updateProfile } = useAuth();
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all"); // 'all' | 'admin' | 'moderator' | 'user'
   const [statusFilter, setStatusFilter] = useState("all"); // 'all' | 'active' | 'suspended'
@@ -126,106 +42,132 @@ export default function AdminUsersPage() {
   // Edit Role Modal State
   const [editingRoleUser, setEditingRoleUser] = useState(null);
   const [selectedRole, setSelectedRole] = useState("user");
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
-  // Load from MongoDB database and localStorage
+  // Clear any legacy mock cache on mount
   useEffect(() => {
-    let isMounted = true;
-    const fetchDbUsers = async () => {
-      try {
-        const res = await fetch("/api/admin/users");
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted && data?.users && data.users.length > 0) {
-            // Merge DB users with existing initial demo users to provide a rich list
-            const dbEmails = new Set(data.users.map((u) => u.email.toLowerCase()));
-            const remainingSeed = INITIAL_USERS.filter(
-              (u) => !dbEmails.has(u.email.toLowerCase())
-            );
-            const combined = [...data.users, ...remainingSeed];
-            setUsers(combined);
-            localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(combined));
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn("Could not fetch DB users:", err.message);
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(STORAGE_USERS_KEY);
       }
-
-      // Fallback to localStorage or initial seed
-      try {
-        const stored = localStorage.getItem(STORAGE_USERS_KEY);
-        if (stored) {
-          setUsers(JSON.parse(stored));
-        } else {
-          setUsers(INITIAL_USERS);
-          localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(INITIAL_USERS));
-        }
-      } catch {
-        setUsers(INITIAL_USERS);
-      }
-    };
-
-    fetchDbUsers();
-    return () => {
-      isMounted = false;
-    };
+    } catch {}
   }, []);
 
-  const saveUsers = (nextUsers) => {
-    setUsers(nextUsers);
+  // Fetch only real users from MongoDB database
+  const fetchDbUsers = useCallback(async () => {
     try {
-      localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(nextUsers));
-    } catch {}
-  };
+      setLoading(true);
+      const res = await fetch("/api/admin/users", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.users) {
+          setUsers(data.users);
+          return;
+        }
+      }
+      setUsers([]);
+    } catch (err) {
+      console.warn("Could not fetch database users:", err.message);
+      toast.error("Could not fetch user directory from database.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  // Toggle Suspend / Activate
-  const handleToggleStatus = (id) => {
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchDbUsers();
+  }, [fetchDbUsers]);
+
+  // Toggle Suspend / Activate directly in MongoDB
+  const handleToggleStatus = async (id) => {
     const target = users.find((u) => u.id === id);
     if (!target) return;
 
     const nextStatus = target.status === "active" ? "suspended" : "active";
-    const updated = users.map((u) =>
-      u.id === id ? { ...u, status: nextStatus } : u
-    );
-    saveUsers(updated);
 
-    if (nextStatus === "suspended") {
-      toast.warning(`User ${target.name} has been suspended`);
-    } else {
-      toast.success(`User ${target.name} account re-activated`);
+    // Optimistic UI update
+    setUsers((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, status: nextStatus } : u))
+    );
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          status: nextStatus,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update status on server");
+      }
+
+      if (nextStatus === "suspended") {
+        toast.warning(`User ${target.name} has been suspended in database`);
+      } else {
+        toast.success(`User ${target.name} account re-activated in database`);
+      }
+    } catch (err) {
+      console.error("Failed to update user status in DB:", err);
+      toast.error("Failed to update status in database. Reverting.");
+      // Rollback
+      setUsers((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, status: target.status } : u))
+      );
     }
   };
 
   // Save Role Change directly to MongoDB database and local state
   const handleSaveRole = async () => {
     if (!editingRoleUser) return;
+    const targetId = editingRoleUser.id;
     const targetEmail = editingRoleUser.email;
-    const updated = users.map((u) =>
-      u.id === editingRoleUser.id ? { ...u, role: selectedRole } : u
-    );
-    saveUsers(updated);
 
-    // Persist to MongoDB database
     try {
-      await fetch("/api/user/role", {
-        method: "POST",
+      setIsUpdatingRole(true);
+
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id: targetId,
           email: targetEmail,
           role: selectedRole,
         }),
       });
-    } catch (dbErr) {
-      console.warn("Failed to update role in DB:", dbErr.message);
-    }
 
-    // If changing role of current logged in user, also update session!
-    if (editingRoleUser.email === currentUser?.email || editingRoleUser.id === "usr-001") {
-      updateProfile({ role: selectedRole });
-    }
+      if (!res.ok) {
+        throw new Error("Failed to update role in database");
+      }
 
-    toast.success(`Role for ${editingRoleUser.name} updated to "${selectedRole}" in database`);
-    setEditingRoleUser(null);
+      // Update local state
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === targetId ? { ...u, role: selectedRole } : u
+        )
+      );
+
+      // Also notify auth context if changing role of logged in user
+      if (
+        editingRoleUser.email === currentUser?.email ||
+        editingRoleUser.id === currentUser?.id
+      ) {
+        updateProfile({ role: selectedRole });
+      }
+
+      toast.success(
+        `Role for ${editingRoleUser.name} updated to "${selectedRole}" in database`
+      );
+      setEditingRoleUser(null);
+    } catch (err) {
+      console.error("Failed to update role in DB:", err);
+      toast.error("Failed to update user role in database.");
+    } finally {
+      setIsUpdatingRole(false);
+    }
   };
 
   // Filtered users
@@ -235,10 +177,10 @@ export default function AdminUsersPage() {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matches =
-          u.name.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q) ||
-          u.phone.includes(q) ||
-          u.id.toLowerCase().includes(q);
+          (u.name || "").toLowerCase().includes(q) ||
+          (u.email || "").toLowerCase().includes(q) ||
+          (u.phone || "").includes(q) ||
+          (u.id || "").toLowerCase().includes(q);
         if (!matches) return false;
       }
 
@@ -256,7 +198,7 @@ export default function AdminUsersPage() {
     });
   }, [users, searchQuery, roleFilter, statusFilter]);
 
-  // Overall KPIs
+  // Overall KPIs calculated from real database users
   const metrics = useMemo(() => {
     let active = 0;
     let suspended = 0;
@@ -273,6 +215,26 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-5">
+      {/* Subheader with Description & Sync Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Real database members registered on Findora with role permissions and access security.
+        </p>
+
+        <button
+          type="button"
+          onClick={fetchDbUsers}
+          disabled={loading}
+          className="self-start sm:self-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 hover:border-[#9ae600] transition-colors shadow-xs"
+        >
+          <RefreshCw
+            size={13}
+            className={loading ? "animate-spin text-[#72a800] dark:text-[#9ae600]" : "text-slate-400"}
+          />
+          <span>Sync Database</span>
+        </button>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#070b04] border border-slate-200 dark:border-white/[0.08] shadow-xs">
@@ -280,7 +242,7 @@ export default function AdminUsersPage() {
             Total Accounts
           </p>
           <p className="mt-1 font-display text-2xl font-bold text-slate-900 dark:text-white">
-            {metrics.total}
+            {loading ? "..." : metrics.total}
           </p>
           <span className="mt-1 inline-block text-[10px] text-slate-500">
             Registered Findora members
@@ -292,7 +254,7 @@ export default function AdminUsersPage() {
             Active Accounts
           </p>
           <p className="mt-1 font-display text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-            {metrics.active}
+            {loading ? "..." : metrics.active}
           </p>
           <span className="mt-1 inline-block text-[10px] text-slate-500">
             In good standing
@@ -304,7 +266,7 @@ export default function AdminUsersPage() {
             Suspended Users
           </p>
           <p className="mt-1 font-display text-2xl font-bold text-rose-500">
-            {metrics.suspended}
+            {loading ? "..." : metrics.suspended}
           </p>
           <span className="mt-1 inline-block text-[10px] text-slate-500">
             Access restricted
@@ -316,7 +278,7 @@ export default function AdminUsersPage() {
             Staff &amp; Admins
           </p>
           <p className="mt-1 font-display text-2xl font-bold text-purple-500">
-            {metrics.admins}
+            {loading ? "..." : metrics.admins}
           </p>
           <span className="mt-1 inline-block text-[10px] text-slate-500">
             Privileged operators
@@ -362,17 +324,6 @@ export default function AdminUsersPage() {
               <option value="active">Active Only</option>
               <option value="suspended">Suspended Only</option>
             </select>
-
-            <button
-              type="button"
-              onClick={() => {
-                saveUsers(INITIAL_USERS);
-                toast.success("User directory reset to default demo users");
-              }}
-              className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer ml-auto"
-            >
-              Reset User Data
-            </button>
           </div>
         </div>
       </div>
@@ -392,10 +343,17 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-white/[0.05]">
-              {filteredUsers.length === 0 ? (
+              {loading ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
-                    <p className="font-semibold text-sm">No users match your criteria</p>
+                    <Loader2 size={24} className="animate-spin mx-auto text-[#72a800] dark:text-[#9ae600] mb-2" />
+                    <p className="font-semibold text-xs">Loading database members...</p>
+                  </td>
+                </tr>
+              ) : filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <p className="font-semibold text-sm">No database users match your criteria</p>
                     <p className="text-xs mt-1">Try resetting the role filter or search query</p>
                   </td>
                 </tr>
@@ -629,10 +587,15 @@ export default function AdminUsersPage() {
               </button>
               <button
                 type="button"
+                disabled={isUpdatingRole}
                 onClick={handleSaveRole}
-                className="btn-primary-glow px-4 py-2 rounded-xl text-xs font-bold text-slate-950 shadow-md cursor-pointer flex items-center gap-1.5"
+                className="btn-primary-glow px-4 py-2 rounded-xl text-xs font-bold text-slate-950 shadow-md cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
               >
-                <Check size={13} />
+                {isUpdatingRole ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Check size={13} />
+                )}
                 <span>Save Role Permissions</span>
               </button>
             </div>

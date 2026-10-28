@@ -45,7 +45,7 @@ export async function getHandovers(filter = "all", currentUser = null, isAdmin =
       if (filter && filter !== "all") searchParams.set("filter", filter);
       if (isAdmin) searchParams.set("isAdmin", "true");
       if (currentUser) {
-        const uid = currentUser.id || currentUser._id;
+        const uid = currentUser.id || currentUser._id || currentUser.userId;
         if (uid) searchParams.set("userId", String(uid));
         if (currentUser.email) searchParams.set("email", String(currentUser.email));
       }
@@ -75,7 +75,9 @@ export async function getHandovers(filter = "all", currentUser = null, isAdmin =
           all: 0,
           upcoming: 0,
           past: 0,
+          pending_proposal: 0,
           proposed: 0,
+          counter_proposed: 0,
           confirmed: 0,
           completed: 0,
           suspicious: 0,
@@ -83,13 +85,13 @@ export async function getHandovers(filter = "all", currentUser = null, isAdmin =
       };
     }
 
-    const currentUserId = String(currentUser.id || currentUser._id || "").toLowerCase();
+    const currentUserId = String(currentUser.id || currentUser._id || currentUser.userId || "").toLowerCase();
     const currentUserEmail = String(currentUser.email || "").toLowerCase();
 
     targetList = all.filter((h) => {
-      const ownerId = String(h.owner?.id || h.owner?._id || "").toLowerCase();
+      const ownerId = String(h.owner?.userId || h.owner?.id || h.owner?._id || "").toLowerCase();
       const ownerEmail = String(h.owner?.email || "").toLowerCase();
-      const finderId = String(h.finder?.id || h.finder?._id || "").toLowerCase();
+      const finderId = String(h.finder?.userId || h.finder?.id || h.finder?._id || "").toLowerCase();
       const finderEmail = String(h.finder?.email || "").toLowerCase();
 
       const isOwner =
@@ -104,7 +106,11 @@ export async function getHandovers(filter = "all", currentUser = null, isAdmin =
   }
 
   const upcoming = targetList.filter(
-    (h) => h.status === "proposed" || h.status === "confirmed"
+    (h) =>
+      h.status === "pending_proposal" ||
+      h.status === "proposed" ||
+      h.status === "counter_proposed" ||
+      h.status === "confirmed"
   );
   const past = targetList.filter(
     (h) => h.status === "completed" || h.status === "reunited"
@@ -160,10 +166,44 @@ export async function createHandoverProposal({
   timeSlot,
   location,
   safetyNote,
-  proposedBy = "owner",
+  proposedBy = "finder",
+  status,
   owner,
   finder,
 }) {
+  const initialStatus = status || (meetingDate && location ? "proposed" : "pending_proposal");
+
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/handovers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          claimId,
+          reportId,
+          itemTitle,
+          itemCategory,
+          itemThumbnail,
+          meetingDate: meetingDate || "",
+          timeSlot: timeSlot || "",
+          location: location || "",
+          safetyNote: safetyNote || "Always meet in a well-lit, public place under security surveillance.",
+          proposedBy,
+          status: initialStatus,
+          owner,
+          finder,
+        }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch (e) {
+      console.warn("Backend create handover error, fallback to local:", e.message);
+    }
+  }
+
   const all = getStore();
 
   // Basic auto safety heuristic to assist admin monitoring
@@ -197,20 +237,22 @@ export async function createHandoverProposal({
       role: "finder",
     },
     proposedBy,
-    meetingDate,
-    timeSlot,
-    location,
+    meetingDate: meetingDate || "",
+    timeSlot: timeSlot || "",
+    location: location || "",
     safetyNote: safetyNote || "Always meet in a well-lit, public place.",
-    status: "proposed",
+    status: initialStatus,
     confirmations: {
-      ownerConfirmed: proposedBy === "owner",
-      finderConfirmed: proposedBy === "finder",
+      ownerConfirmed: false,
+      finderConfirmed: false,
     },
     history: [
       {
         at: new Date().toISOString(),
         by: proposedBy === "finder" ? "Finder" : "Owner",
-        action: `Proposed safe handover meeting at ${location}`,
+        action: meetingDate && location
+          ? `Proposed safe handover meeting at ${location}`
+          : "Handover ticket initialized. Awaiting schedule proposal from finder.",
       },
     ],
     suspiciousFlags,
@@ -273,12 +315,29 @@ export async function acceptHandoverProposal(id, recipientRole = "owner") {
 }
 
 /**
- * Suggest alternative time or location
+ * Finder submits initial meeting schedule proposal
  */
-export async function suggestAlternativeProposal(
+export async function proposeHandoverMeeting(
   id,
-  { meetingDate, timeSlot, location, safetyNote, suggestedBy = "recipient" }
+  { meetingDate, timeSlot, location, safetyNote }
 ) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/handovers/${id}/propose`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ meetingDate, timeSlot, location, safetyNote }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch (e) {
+      console.warn("Backend propose handover error, fallback to local:", e.message);
+    }
+  }
+
   const all = getStore();
   const index = all.findIndex((h) => h._id === id || h.id === id);
   if (index === -1) {
@@ -288,21 +347,227 @@ export async function suggestAlternativeProposal(
   const existing = all[index];
   const updated = {
     ...existing,
-    meetingDate: meetingDate || existing.meetingDate,
-    timeSlot: timeSlot || existing.timeSlot,
-    location: location || existing.location,
-    safetyNote: safetyNote || existing.safetyNote,
-    status: "proposed", // resets to proposed so other party can review
-    confirmations: {
-      ownerConfirmed: suggestedBy === "owner",
-      finderConfirmed: suggestedBy === "finder",
-    },
+    meetingDate,
+    timeSlot,
+    location,
+    safetyNote: safetyNote || "Always meet in a well-lit, public place under security surveillance.",
+    proposedBy: "finder",
+    status: "proposed",
     history: [
       ...(existing.history || []),
       {
         at: new Date().toISOString(),
-        by: suggestedBy,
+        by: "Finder",
+        action: `Finder created handover proposal: meeting at ${location} on ${meetingDate} (${timeSlot})`,
+      },
+    ],
+    updatedAt: new Date().toISOString(),
+  };
+
+  all[index] = updated;
+  saveStore(all);
+  return updated;
+}
+
+/**
+ * Receiver suggests alternative time or location (counter-proposal)
+ */
+export async function suggestAlternativeProposal(
+  id,
+  { meetingDate, timeSlot, location, safetyNote, suggestedBy = "owner" }
+) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/handovers/${id}/suggest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ meetingDate, timeSlot, location, safetyNote, suggestedBy }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch (e) {
+      console.warn("Backend suggest alternative error, fallback to local:", e.message);
+    }
+  }
+
+  const all = getStore();
+  const index = all.findIndex((h) => h._id === id || h.id === id);
+  if (index === -1) {
+    throw new Error("Handover record not found.");
+  }
+
+  const existing = all[index];
+  const updated = {
+    ...existing,
+    counterProposal: {
+      meetingDate: meetingDate || existing.meetingDate,
+      timeSlot: timeSlot || existing.timeSlot,
+      location: location || existing.location,
+      safetyNote: safetyNote || "Alternative schedule proposed by receiver.",
+      suggestedBy,
+      suggestedAt: new Date().toISOString(),
+      status: "pending",
+    },
+    status: "counter_proposed",
+    history: [
+      ...(existing.history || []),
+      {
+        at: new Date().toISOString(),
+        by: suggestedBy === "owner" ? "Receiver" : "Finder",
         action: `Counter-proposed new meeting spot/time: ${location || existing.location} (${meetingDate || existing.meetingDate})`,
+      },
+    ],
+    updatedAt: new Date().toISOString(),
+  };
+
+  all[index] = updated;
+  saveStore(all);
+  return updated;
+}
+
+/**
+ * Finder accepts counter-proposal: updates schedule and confirms
+ */
+export async function acceptCounterProposal(id) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/handovers/${id}/counter/accept`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch (e) {
+      console.warn("Backend accept counter error, fallback to local:", e.message);
+    }
+  }
+
+  const all = getStore();
+  const index = all.findIndex((h) => h._id === id || h.id === id);
+  if (index === -1) {
+    throw new Error("Handover record not found.");
+  }
+
+  const existing = all[index];
+  const counter = existing.counterProposal || {};
+  const updated = {
+    ...existing,
+    meetingDate: counter.meetingDate || existing.meetingDate,
+    timeSlot: counter.timeSlot || existing.timeSlot,
+    location: counter.location || existing.location,
+    safetyNote: counter.safetyNote || existing.safetyNote,
+    counterProposal: { ...counter, status: "accepted" },
+    status: "confirmed",
+    history: [
+      ...(existing.history || []),
+      {
+        at: new Date().toISOString(),
+        by: "Finder",
+        action: `Finder accepted receiver's alternative schedule! Meeting confirmed at ${counter.location || existing.location}`,
+      },
+    ],
+    updatedAt: new Date().toISOString(),
+  };
+
+  all[index] = updated;
+  saveStore(all);
+  return updated;
+}
+
+/**
+ * Finder declines counter-proposal: keeps original details
+ */
+export async function declineCounterProposal(id) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/handovers/${id}/counter/decline`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch (e) {
+      console.warn("Backend decline counter error, fallback to local:", e.message);
+    }
+  }
+
+  const all = getStore();
+  const index = all.findIndex((h) => h._id === id || h.id === id);
+  if (index === -1) {
+    throw new Error("Handover record not found.");
+  }
+
+  const existing = all[index];
+  const updated = {
+    ...existing,
+    counterProposal: { ...(existing.counterProposal || {}), status: "declined" },
+    status: "proposed",
+    history: [
+      ...(existing.history || []),
+      {
+        at: new Date().toISOString(),
+        by: "Finder",
+        action: "Finder declined the alternative schedule. Original meeting proposal maintained.",
+      },
+    ],
+    updatedAt: new Date().toISOString(),
+  };
+
+  all[index] = updated;
+  saveStore(all);
+  return updated;
+}
+
+/**
+ * Report risky meeting location to admin
+ */
+export async function reportRiskyLocation(id, { reason, role, userId }) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const res = await fetch(`${apiBase}/handovers/${id}/report-risky`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason, role, userId }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch (e) {
+      console.warn("Backend report risky location error, fallback to local:", e.message);
+    }
+  }
+
+  const all = getStore();
+  const index = all.findIndex((h) => h._id === id || h.id === id);
+  if (index === -1) {
+    throw new Error("Handover record not found.");
+  }
+
+  const existing = all[index];
+  const updated = {
+    ...existing,
+    hasWarning: true,
+    suspiciousFlags: [
+      ...(existing.suspiciousFlags || []),
+      `Risk reported by ${role || "member"}: ${reason || "Unsafe location"}`,
+    ],
+    history: [
+      ...(existing.history || []),
+      {
+        at: new Date().toISOString(),
+        by: role === "finder" ? "Finder" : "Receiver",
+        action: `Reported location safety concern to admin: "${reason || "Unsafe location"}"`,
       },
     ],
     updatedAt: new Date().toISOString(),

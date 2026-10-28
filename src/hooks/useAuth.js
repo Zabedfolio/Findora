@@ -90,6 +90,7 @@ export function useAuth() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshUser();
     const handleUpdate = () => refreshUser();
     if (typeof window !== "undefined") {
@@ -98,41 +99,49 @@ export function useAuth() {
     }
   }, [refreshUser]);
 
+  const [dbName, setDbName] = useState(null);
+  const [dbPhone, setDbPhone] = useState(null);
   const [dbRole, setDbRole] = useState(null);
   const [dbImage, setDbImage] = useState(null);
   const lastFetchedEmailRef = useRef(null);
 
-  // Synchronize role and avatar image directly from MongoDB database
+  // Synchronize full profile (name, phone, avatar, role) directly from MongoDB database
   useEffect(() => {
     const targetEmail = sessionData?.user?.email || demoUser?.email;
     if (!targetEmail) return;
-    if (lastFetchedEmailRef.current === targetEmail && dbRole) return;
+    if (lastFetchedEmailRef.current === targetEmail && dbRole && dbName) return;
     lastFetchedEmailRef.current = targetEmail;
 
     let isMounted = true;
-    fetch(`/api/user/role?email=${encodeURIComponent(targetEmail)}`)
+    fetch(`/api/user/profile?email=${encodeURIComponent(targetEmail)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (isMounted && data?.success) {
-          if (data?.role) {
-            setDbRole((prev) => (prev !== data.role ? data.role : prev));
-            if (typeof document !== "undefined") {
-              document.cookie = `findora_role=${data.role}; path=/; max-age=604800; SameSite=Lax`;
-            }
+        if (isMounted && data?.success && data?.user) {
+          if (data.user.name) {
+            setDbName(data.user.name);
           }
-          if (data?.user?.image) {
-            setDbImage((prev) => (prev !== data.user.image ? data.user.image : prev));
+          if (data.user.phone) {
+            setDbPhone(data.user.phone);
+          }
+          if (data.user.image) {
+            setDbImage(data.user.image);
+          }
+          if (data.user.role) {
+            setDbRole((prev) => (prev !== data.user.role ? data.user.role : prev));
+            if (typeof document !== "undefined") {
+              document.cookie = `findora_role=${data.user.role}; path=/; max-age=604800; SameSite=Lax`;
+            }
           }
         }
       })
       .catch((err) => {
-        console.warn("Live DB role sync fallback:", err.message);
+        console.warn("Live DB profile sync fallback:", err.message);
       });
 
     return () => {
       isMounted = false;
     };
-  }, [sessionData?.user?.email, demoUser?.email, dbRole]);
+  }, [sessionData?.user?.email, demoUser?.email, dbRole, dbName]);
 
   const isLoggedOut =
     typeof window !== "undefined" &&
@@ -147,9 +156,12 @@ export function useAuth() {
     if (isLoggedOut || !rawUser) return null;
     return {
       ...rawUser,
+      name: dbName || rawUser?.name || "Member",
+      phone: dbPhone || rawUser?.phone || "",
       role: dbRole || rawUser?.role || "user",
       image: dbImage || rawUser?.image || "/default-avatar.png",
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isLoggedOut,
     rawUser?.id,
@@ -159,6 +171,8 @@ export function useAuth() {
     rawUser?.phone,
     rawUser?.role,
     rawUser?.image,
+    dbName,
+    dbPhone,
     dbRole,
     dbImage,
   ]);
@@ -195,36 +209,82 @@ export function useAuth() {
       syncAuthCookies(newUser);
       setDemoUser(newUser);
       setDbRole(targetRole);
+      setDbName(newUser.name);
+      setDbPhone(newUser.phone);
       window.dispatchEvent(new Event("findora_user_updated"));
     }
     return newUser;
   };
 
   /**
-   * Update current user profile and sync role with MongoDB
+   * Update current user profile and sync with MongoDB database and Better-Auth
    */
   const updateProfile = async (updates) => {
     try {
       if (!user) return { success: false };
 
-      // If role is updated, persist directly into MongoDB database
-      if (updates?.role && user?.email) {
+      const userEmail = user.email || updates?.email;
+      const userId = user.id || user._id || updates?.id;
+
+      // 1. If active Better-Auth session, update Better-Auth client
+      if (sessionData?.user && authClient?.updateUser) {
         try {
-          const res = await fetch("/api/user/role", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: user.email,
-              role: updates.role,
-            }),
+          await authClient.updateUser({
+            name: updates.name !== undefined ? updates.name : user.name,
+            image: updates.image !== undefined ? updates.image : user.image,
           });
-          if (res.ok) {
-            setDbRole(updates.role);
-          }
-        } catch (dbErr) {
-          console.warn("Failed to persist role to MongoDB:", dbErr.message);
+        } catch (authErr) {
+          console.warn("Better-auth updateUser fallback:", authErr.message);
         }
       }
+
+      // 2. Persist directly into MongoDB database via Next.js API
+      try {
+        const res = await fetch("/api/user/profile", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: userEmail,
+            id: userId,
+            ...updates,
+          }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.user) {
+            if (json.user.name) setDbName(json.user.name);
+            if (json.user.phone) setDbPhone(json.user.phone);
+            if (json.user.image) setDbImage(json.user.image);
+            if (json.user.role) setDbRole(json.user.role);
+          }
+        }
+      } catch (dbErr) {
+        console.warn("Failed to persist profile to MongoDB API:", dbErr.message);
+      }
+
+      // 3. Also sync with backend Express server (port 5000) if available
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+      if (apiBase) {
+        try {
+          const backendTarget = encodeURIComponent(userEmail || userId);
+          await fetch(`${apiBase}/users/${backendTarget}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: userEmail,
+              ...updates,
+            }),
+          });
+        } catch (backendErr) {
+          console.warn("Backend Express profile sync fallback:", backendErr.message);
+        }
+      }
+
+      // 4. Update immediate local states and storage
+      if (updates.name !== undefined) setDbName(updates.name);
+      if (updates.phone !== undefined) setDbPhone(updates.phone);
+      if (updates.image !== undefined) setDbImage(updates.image);
+      if (updates.role !== undefined) setDbRole(updates.role);
 
       const updatedUser = {
         ...(user || {}),

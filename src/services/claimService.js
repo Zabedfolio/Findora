@@ -199,7 +199,7 @@ export async function getMyClaims(params = {}, currentUser = null) {
       });
 
       if (currentUser) {
-        const uid = currentUser.id || currentUser._id;
+        const uid = currentUser.id || currentUser._id || currentUser.userId;
         if (uid && !searchParams.has("userId")) {
           searchParams.append("userId", String(uid));
         }
@@ -258,14 +258,14 @@ export async function getMyClaims(params = {}, currentUser = null) {
     };
   }
 
-  const currentUserId = String(currentUser.id || currentUser._id || "").toLowerCase();
+  const currentUserId = String(currentUser.id || currentUser._id || currentUser.userId || "").toLowerCase();
   const currentUserEmail = String(currentUser.email || "").toLowerCase();
 
   // Strictly filter by current user
   allClaims = allClaims.filter((c) => {
-    const claimantId = String(c.claimant?.id || c.claimant?._id || "").toLowerCase();
+    const claimantId = String(c.claimant?.id || c.claimant?._id || c.claimant?.userId || "").toLowerCase();
     const claimantEmail = String(c.claimant?.email || "").toLowerCase();
-    const finderId = String(c.finder?.id || c.finder?._id || "").toLowerCase();
+    const finderId = String(c.finder?.id || c.finder?._id || c.finder?.userId || "").toLowerCase();
     const finderEmail = String(c.finder?.email || "").toLowerCase();
 
     const isClaimant =
@@ -544,7 +544,7 @@ export async function approveClaim(id, note = "") {
     all[index] = updated;
     saveStoredClaims(all);
 
-    // Auto-create safe handover proposal for the claim so both parties see it in /dashboard/handovers
+    // Auto-create safe handover proposal for the claim in pending_proposal status
     try {
       await createHandoverProposal({
         claimId: claim.id,
@@ -552,11 +552,12 @@ export async function approveClaim(id, note = "") {
         itemTitle: claim.itemTitle,
         itemCategory: claim.category,
         itemThumbnail: claim.imageUrl,
-        meetingDate: new Date(Date.now() + 86400000 * 2).toISOString().split("T")[0],
-        timeSlot: "Afternoon (03:30 PM - 05:00 PM)",
-        location: claim.location || "Local Police Station / Designated Safe Zone",
-        safetyNote: note || "Meet inside public reception under security supervision.",
+        meetingDate: "",
+        timeSlot: "",
+        location: "",
+        safetyNote: note || "Meet in a designated public safe zone.",
         proposedBy: "finder",
+        status: "pending_proposal",
         owner: claim.claimant,
         finder: claim.finder,
       });

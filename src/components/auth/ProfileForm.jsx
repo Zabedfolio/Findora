@@ -17,10 +17,12 @@ export default function ProfileForm() {
   // Pre-fill fields whenever user changes or hydrates
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(user.name || "");
       setPhone(user.phone || "");
       setAvatarPreview(user.image || "");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.name, user?.phone, user?.image]);
 
   // Handle local avatar file upload with instant base64 preview
@@ -98,6 +100,7 @@ export default function ProfileForm() {
         <div className="relative group shrink-0">
           <div className="w-20 h-20 rounded-2xl overflow-hidden ring-4 ring-slate-100 dark:ring-white/10 shadow-md bg-slate-100 dark:bg-white/5 flex items-center justify-center">
             {avatarPreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={avatarPreview}
                 alt={name || "User Avatar"}
