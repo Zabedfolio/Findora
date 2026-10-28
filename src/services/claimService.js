@@ -544,7 +544,7 @@ export async function approveClaim(id, note = "") {
     all[index] = updated;
     saveStoredClaims(all);
 
-    // Auto-create safe handover proposal for the claim so both parties see it in /dashboard/handovers
+    // Auto-create safe handover proposal for the claim in pending_proposal status
     try {
       await createHandoverProposal({
         claimId: claim.id,
@@ -552,11 +552,12 @@ export async function approveClaim(id, note = "") {
         itemTitle: claim.itemTitle,
         itemCategory: claim.category,
         itemThumbnail: claim.imageUrl,
-        meetingDate: new Date(Date.now() + 86400000 * 2).toISOString().split("T")[0],
-        timeSlot: "Afternoon (03:30 PM - 05:00 PM)",
-        location: claim.location || "Local Police Station / Designated Safe Zone",
-        safetyNote: note || "Meet inside public reception under security supervision.",
+        meetingDate: "",
+        timeSlot: "",
+        location: "",
+        safetyNote: note || "Meet in a designated public safe zone.",
         proposedBy: "finder",
+        status: "pending_proposal",
         owner: claim.claimant,
         finder: claim.finder,
       });

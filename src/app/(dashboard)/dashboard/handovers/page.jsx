@@ -55,6 +55,7 @@ function HandoversDashboardContent() {
   }, [user]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadHandovers();
   }, [loadHandovers]);
 
@@ -63,7 +64,13 @@ function HandoversDashboardContent() {
     return handovers.filter((h) => {
       // Tab filter
       if (activeTab === "upcoming") {
-        if (h.status !== "proposed" && h.status !== "confirmed") return false;
+        if (
+          h.status !== "pending_proposal" &&
+          h.status !== "proposed" &&
+          h.status !== "counter_proposed" &&
+          h.status !== "confirmed"
+        )
+          return false;
       } else if (activeTab === "past") {
         if (h.status !== "completed" && h.status !== "reunited") return false;
       }
@@ -87,7 +94,11 @@ function HandoversDashboardContent() {
   const counts = useMemo(() => {
     const total = handovers.length;
     const upcoming = handovers.filter(
-      (h) => h.status === "proposed" || h.status === "confirmed"
+      (h) =>
+        h.status === "pending_proposal" ||
+        h.status === "proposed" ||
+        h.status === "counter_proposed" ||
+        h.status === "confirmed"
     ).length;
     const confirmed = handovers.filter((h) => h.status === "confirmed").length;
     const completed = handovers.filter(
@@ -311,10 +322,18 @@ function HandoversDashboardContent() {
       ) : filteredHandovers.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {filteredHandovers.map((item) => {
-            const isFinder =
-              (user?.id && (item.finder?.id === user.id || item.finder?.id === user._id)) ||
-              (user?.email && item.finder?.email?.toLowerCase() === user.email?.toLowerCase());
-            const role = isFinder ? "finder" : "owner";
+            const currentUserId = user?.id || user?._id || user?.userId;
+            const currentUserEmail = (user?.email || "").toLowerCase();
+
+            const isFinder = Boolean(
+              (currentUserId && (
+                item.finder?.userId === currentUserId ||
+                item.finder?.id === currentUserId ||
+                item.finder?._id === currentUserId
+              )) ||
+              (currentUserEmail && item.finder?.email?.toLowerCase() === currentUserEmail)
+            );
+            const role = isFinder ? "finder" : "receiver";
 
             return (
               <HandoverCard
