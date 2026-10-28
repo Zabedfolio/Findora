@@ -178,7 +178,7 @@ export default function AdminOverviewPage() {
 
       {/* Hotspots Section */}
       <section aria-labelledby="hotspot-analysis-heading">
-        <TopLocationsList />
+        <TopLocationsList locations={metrics?.topLocations} />
       </section>
 
       {/* Recovery Trends & Category Breakdown Charts */}
