@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import { Quote } from "lucide-react";
 import StarRating from "./StarRating";
 
 export default function ReviewCard({ review = {} }) {
