@@ -67,8 +67,10 @@ export default function AdminOverviewPage() {
   const resolvedCount = metrics?.resolvedCount ?? localReports.filter((r) => r.status === "resolved").length;
   const recoveryRate = metrics?.recoveryRate ?? (totalReports > 0 ? Math.round((resolvedCount / totalReports) * 100) : 0);
 
-  // Dynamic recent items
-  const recentItems = metrics?.recentListings || localReports.slice(0, 10);
+  // Dynamic items for platform telemetry
+  const allPlatformItems = metrics?.allListings?.length
+    ? metrics.allListings
+    : localReports;
 
   return (
     <div className="space-y-6">
@@ -178,7 +180,7 @@ export default function AdminOverviewPage() {
 
       {/* Recovery Trends & Category Breakdown Charts */}
       <section aria-labelledby="analytics-charts-heading">
-        <RecoveryCharts items={recentItems.length > 0 ? recentItems : localReports} />
+        <RecoveryCharts items={allPlatformItems} />
       </section>
     </div>
   );

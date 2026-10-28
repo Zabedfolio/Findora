@@ -125,14 +125,42 @@ export default function RecoveryCharts({
   const [mounted, setMounted] = useState(false);
   const [categoryView, setCategoryView] = useState("bar"); // 'bar' | 'pie'
   const [lineActiveMetric, setLineActiveMetric] = useState("all"); // 'all' | 'lost' | 'found' | 'returned'
+  const [fetchedItems, setFetchedItems] = useState([]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+    if (!items || items.length < 20) {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+      if (apiBase) {
+        fetch(`${apiBase}/items?limit=100`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((json) => {
+            if (!ignore && json?.data && json.data.length > 0) {
+              setFetchedItems(json.data);
+            }
+          })
+          .catch((err) => console.warn("Failed to load live items for telemetry charts:", err));
+      }
+    }
+    return () => {
+      ignore = true;
+    };
+  }, [items]);
+
+  const liveItems = useMemo(() => {
+    if (items && items.length >= 20) return items;
+    if (fetchedItems.length > 0) return fetchedItems;
+    return items || [];
+  }, [items, fetchedItems]);
+
   // 1. Monthly line chart data (Last 12 Months)
   const monthlyData = useMemo(() => {
-    const rawBuckets = bucketize(items, "12m");
+    const rawBuckets = bucketize(liveItems, "12m");
     return rawBuckets.map((b) => ({
       month: b.label,
       lost: b.lost,
@@ -140,14 +168,16 @@ export default function RecoveryCharts({
       returned: b.returned,
       total: b.lost + b.found,
     }));
-  }, [items]);
+  }, [liveItems]);
 
   // 2. Category data with colors
   const categoryData = useMemo(() => {
-    const rawCategories = aggregateByCategory(items);
-    const grandTotal = rawCategories.reduce((acc, cur) => acc + cur.total, 0) || 1;
+    const rawCategories = aggregateByCategory(liveItems);
+    const activeOnly = rawCategories.filter((c) => c.total > 0);
+    const dataToDisplay = activeOnly.length > 0 ? activeOnly : rawCategories;
+    const grandTotal = dataToDisplay.reduce((acc, cur) => acc + cur.total, 0) || 1;
 
-    return rawCategories.map((c, index) => ({
+    return dataToDisplay.map((c, index) => ({
       category: c.label,
       total: c.total,
       lost: c.lost,
@@ -155,7 +185,7 @@ export default function RecoveryCharts({
       percent: c.total / grandTotal,
       fill: COLORS.palette[index % COLORS.palette.length],
     }));
-  }, [items]);
+  }, [liveItems]);
 
   // 3. Summary KPI highlights
   const summary = useMemo(() => {
